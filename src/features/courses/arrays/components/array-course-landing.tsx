@@ -10,15 +10,15 @@ export function ArrayCourseLanding() {
   return (
     <div className="flex flex-1 flex-col gap-8 px-4 py-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-        <section className="rounded-[2.25rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.2)]">
+        <section className="rounded-lg border border-border/70  py-8 shadow-[0_24px_80px_rgba(0,0,0,0.2)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-4">
+            <div className="max-w-2xl space-y-4">
               {/* <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">
                 Course
               </p> */}
               <div>
                 <h1 className="text-4xl font-semibold tracking-tight">{arraysCourse.title}</h1>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                <p className="mt-0 text-sm text-muted-foreground">
                   {arraysCourse.description}
                 </p>
               </div>
@@ -37,9 +37,9 @@ export function ArrayCourseLanding() {
                   <Mic className="size-4" />
                   Talk through this course
                 </Button> */}
-                <p className="max-w-56 text-xs leading-5 text-muted-foreground lg:text-right">
+                {/* <p className="max-w-56 text-xs leading-5 text-muted-foreground lg:text-right">
                   Voice hooks are ready for later without changing the lesson routes.
-                </p>
+                </p> */}
               </div>
             </div>
           </div>
@@ -71,15 +71,16 @@ export function ArrayCourseLanding() {
 
         <section className="space-y-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">
+            {/* <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">
               Lesson map
-            </p>
+            </p> */}
             <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-              Follow the line one idea at a time
+              {/* Follow the line one idea at a time */}
+              Lesson map
             </h2>
           </div>
 
-          <div className="rounded-[1.75rem] border border-border/70 bg-card/70 p-5">
+          <div className="rounded-lg border border-border/70 bg-card/70 p-5">
             <div className="space-y-3">
               {arraysCourse.lessons.map((lesson, index) => (
                 <div key={lesson.segment} className="flex gap-4">

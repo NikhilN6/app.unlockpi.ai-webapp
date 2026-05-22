@@ -45,7 +45,7 @@ export default async function ProjectsPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-4 md:px-6 md:py-6">
-      <div className="flex flex-col gap-4 rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.14)] md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 rounded-lg border border-border/70  py-6 shadow-[0_18px_60px_rgba(0,0,0,0.14)] md:flex-row md:items-end md:justify-between">
         <div className="max-w-3xl space-y-3">
           <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Projects</p>
           <div>

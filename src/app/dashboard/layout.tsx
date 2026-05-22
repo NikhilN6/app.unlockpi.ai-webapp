@@ -1,8 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { redirect } from "next/navigation";
 
-import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { DashboardShell } from "@/components/dashboard-shell";
 import { createClient } from "@/lib/server";
 
 const dashboardShellStyle = {
@@ -16,18 +15,30 @@ export default async function DashboardLayout({
   children: ReactNode;
 }) {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (error || !data?.claims) {
+  if (error || !user) {
     redirect("/auth/login");
   }
 
+  const displayName =
+    (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
+    (typeof user.user_metadata?.name === "string" && user.user_metadata.name) ||
+    user.email ||
+    "User";
+
   return (
-    <SidebarProvider style={dashboardShellStyle}>
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <main className="flex flex-1 flex-col">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <DashboardShell
+      shellStyle={dashboardShellStyle}
+      currentUser={{
+        email: user.email ?? "",
+        name: displayName,
+      }}
+    >
+      {children}
+    </DashboardShell>
   );
 }

@@ -131,8 +131,8 @@ export function ProjectWorkspace({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <Card className="border-border/70">
+    <div className="gap-6 ">
+      {/* <Card className="border-border/70">
         <CardHeader className="border-b">
           <CardTitle>Sessions</CardTitle>
           <CardDescription>
@@ -176,7 +176,7 @@ export function ProjectWorkspace({
             })
           )}
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Card className="border-border/70">
         <CardHeader className="border-b">
@@ -243,7 +243,7 @@ export function ProjectWorkspace({
                 </Badge>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="gap-4 ">
                 <div className="space-y-2 rounded-2xl border border-border bg-muted/20 p-4">
                   <h3 className="flex items-center gap-2 text-sm font-medium">
                     <TargetIcon className="size-4" />
@@ -259,8 +259,8 @@ export function ProjectWorkspace({
                     <MessageSquareIcon className="size-4" />
                     Lesson structure
                   </h3>
-                  <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground">
-                    {selectedSession.lesson_structure}
+                  <p className="whitespace-pre-line text-sm leading-6 text-muted-foreground truncate">
+                    {selectedSession.lesson_structure.slice(0, 200) || "No lesson structure provided yet."}
                   </p>
                 </div>
               </div>
