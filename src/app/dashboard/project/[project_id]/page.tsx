@@ -64,26 +64,25 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
   const sessions = (sessionData ?? []) as TeachingSession[]
 
   return (
-    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-4 md:px-6 md:py-6">
-      <div className="flex flex-col gap-6 rounded-[2rem] border border-border/70 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.14)] lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-3xl space-y-3">
-          <Link href="/dashboard/projects" className="text-sm text-muted-foreground hover:text-foreground">
-            Back to projects
-          </Link>
-          <div className="flex items-center gap-2">
-            <FolderIcon className="size-4 text-muted-foreground" />
-            <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
-          </div>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {project.description || "This project groups all related teaching sessions together."}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{sessions.length} sessions</Badge>
-            <Badge variant="secondary">Updated {formatDate(project.updated_at)}</Badge>
-          </div>
-        </div>
-
+    <section className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-4 md:px-8 md:py-6">
+      <div className="flex flex-col gap-6 rounded-[2rem] border border-border/70  lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-end gap-4">
+          <div className="max-w-3xl space-y-0">
+            {/* <Link href="/dashboard/projects" className="text-sm text-muted-foreground hover:text-foreground">
+            Back to projects
+          </Link> */}
+            <div className="flex items-center gap-2">
+              <FolderIcon className="size-4 text-muted-foreground" />
+              <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
+            </div>
+            <p className="text-sm mt-1 mb-1 leading-6 text-muted-foreground">
+              {project.description || "This project groups all related teaching sessions together."}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{sessions.length} sessions</Badge>
+              <Badge variant="secondary">Updated {formatDate(project.updated_at)}</Badge>
+            </div>
+          </div>
           <div className="hidden md:block">
             <Image
               src="/thought-time.png"
@@ -93,11 +92,12 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
               className="object-contain"
             />
           </div>
-          <Button render={<Link href={`/dashboard/session/new?project_id=${project.id}`} />}>
-            <PenLineIcon className="size-4" />
-            New session
-          </Button>
+
         </div>
+        <Button render={<Link href={`/dashboard/session/new?project_id=${project.id}`} />}>
+          <PenLineIcon className="size-4" />
+          New session
+        </Button>
       </div>
 
       <ProjectWorkspace

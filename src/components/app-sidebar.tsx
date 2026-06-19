@@ -2,20 +2,32 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 import {
   CircleHelpIcon,
   FolderIcon,
+  LogOutIcon,
+  MessageSquareIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PenLineIcon,
   Settings2Icon,
 } from "lucide-react"
 import type { ComponentType } from "react"
-import { VscCommentDiscussionSparkle } from "react-icons/vsc"
+import { PiChalkboardDuotone } from "react-icons/pi";
 
+import { createClient } from "@/lib/client"
 import { cn } from "@/lib/utils"
+import {
+  Menu,
+  MenuGroup,
+  MenuGroupLabel,
+  MenuItem,
+  MenuPopup,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu"
 import {
   Sidebar,
   SidebarContent,
@@ -35,16 +47,21 @@ type MainItem = {
   subtitle?: string
 }
 
+type SidebarUser = {
+  name: string
+  email: string
+}
+
 const topItems: MainItem[] = [
-  {
-    title: "Interviews",
-    url: "/dashboard/interview",
-    icon: VscCommentDiscussionSparkle,
-  },
+  // {
+  //   title: "Interviews",
+  //   url: "/dashboard/interview",
+  //   icon: VscCommentDiscussionSparkle,
+  // },
   {
     title: "Courses",
     url: "/dashboard/courses",
-    icon: FolderIcon,
+    icon: PenLineIcon ,
   },
   {
     title: "Projects",
@@ -54,16 +71,10 @@ const topItems: MainItem[] = [
 ]
 
 const quickAction = {
-  title: "New session",
-  url: "/dashboard/session/new",
-  icon: PenLineIcon,
-  hint: "Open session intake and start teaching flow",
+  title: "Canvas",
+  url: "/dashboard/canvas",
+  icon: PiChalkboardDuotone,
 }
-
-const footerItems = [
-  { title: "Help & feedback", icon: CircleHelpIcon, url: "#" },
-  { title: "Settings", icon: Settings2Icon, url: "/dashboard/settings" },
-]
 
 function SidebarCollapseButton() {
   const { state, toggleSidebar } = useSidebar()
@@ -85,10 +96,29 @@ function SidebarCollapseButton() {
   )
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  currentUser,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  currentUser?: SidebarUser
+}) {
   const pathname = usePathname()
-  const { state: sidebarState, toggleSidebar } = useSidebar()
+  const { push, replace, refresh } = useRouter()
+  const { state: sidebarState, toggleSidebar, isMobile } = useSidebar()
   const isSidebarCollapsed = sidebarState === "collapsed"
+  const userInitial = currentUser?.name?.trim().charAt(0).toUpperCase() || "U"
+  const isCanvasActive = pathname === quickAction.url
+
+  const navigateTo = (href: string) => {
+    push(href)
+  }
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    replace("/auth/login")
+    refresh()
+  }
 
   return (
     <Sidebar
@@ -146,14 +176,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton
               render={<Link href={quickAction.url} />}
               tooltip={quickAction.title}
+              isActive={isCanvasActive}
               className="h-auto min-h-10 items-start gap-2.5 py-2 group-data-[collapsible=icon]:items-center"
             >
               <quickAction.icon className="mt-0.5 size-4 shrink-0" />
               <div className="grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden">
                 <span className="truncate">{quickAction.title}</span>
-                <span className="truncate text-xs font-normal text-muted-foreground">
-                  {quickAction.hint}
-                </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -195,20 +223,78 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter className="mt-auto border-t border-border px-2 py-3">
-        <SidebarMenu className="gap-1">
-          {footerItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                render={<a href={item.url} />}
-                tooltip={item.title}
-                className="h-10 gap-2.5 group-data-[collapsible=icon]:justify-center"
-              >
-                <item.icon className="size-4 shrink-0" />
-                <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-              </SidebarMenuButton>
+        {currentUser ? (
+          <SidebarMenu className="mt-2">
+            <SidebarMenuItem>
+              <Menu>
+                <MenuTrigger
+                  render={
+                    <SidebarMenuButton
+                      size="lg"
+                      tooltip={currentUser.name}
+                      className="h-auto min-h-12 items-center gap-3 rounded-2xl border border-border/70 bg-background/70 p-3 aria-expanded:bg-accent/50"
+                    />
+                  }
+                >
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/12 text-sm font-semibold text-primary">
+                    {userInitial}
+                  </div>
+                  <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                    <span className="truncate text-sm font-medium text-foreground">
+                      {currentUser.name}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {currentUser.email}
+                    </span>
+                  </div>
+                </MenuTrigger>
+
+                <MenuPopup
+                  className="min-w-56"
+                  side={isMobile ? "bottom" : "right"}
+                  align="end"
+                  sideOffset={6}
+                >
+                  <MenuGroup>
+                    <MenuGroupLabel>
+                      <div className="flex items-center gap-3 px-1 py-1.5 text-left">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/12 text-sm font-semibold text-primary">
+                          {userInitial}
+                        </div>
+                        <div className="grid min-w-0 flex-1 leading-tight">
+                          <span className="truncate text-sm font-medium text-foreground">
+                            {currentUser.name}
+                          </span>
+                          <span className="truncate text-xs text-muted-foreground">
+                            {currentUser.email}
+                          </span>
+                        </div>
+                      </div>
+                    </MenuGroupLabel>
+                  </MenuGroup>
+                  <MenuSeparator />
+                  <MenuItem onClick={() => navigateTo("/dashboard/settings")}>
+                    <Settings2Icon className="size-4" />
+                    Settings
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout}>
+                    <LogOutIcon className="size-4" />
+                    Log out
+                  </MenuItem>
+                  <MenuSeparator />
+                  <MenuItem onClick={() => navigateTo("/dashboard/help")}>
+                    <CircleHelpIcon className="size-4" />
+                    Help
+                  </MenuItem>
+                  <MenuItem onClick={() => navigateTo("/dashboard/feedback")}>
+                    <MessageSquareIcon className="size-4" />
+                    Feedback
+                  </MenuItem>
+                </MenuPopup>
+              </Menu>
             </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+          </SidebarMenu>
+        ) : null}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
