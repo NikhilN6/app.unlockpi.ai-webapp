@@ -1,11 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Mic,
+  MicOff,
+  Square,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { LinePath } from "@visx/shape";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ArrayStrip } from "@/features/courses/arrays/components/array-strip";
+import {
+  type ArrayRealtimeUiAction,
+  useArrayRealtimeTutor,
+} from "@/features/courses/arrays/hooks/use-array-realtime-tutor";
 import type {
   ArrayLessonCheckpoint,
   ArrayLessonDefinition,
@@ -39,6 +52,17 @@ type CheckpointArrayFrame = {
 };
 
 type ArrayFrame = VisualArrayFrame | CheckpointArrayFrame;
+
+type RuntimeArrayOverride = {
+  data?: ArrayValue[];
+  activeIndex?: number | null;
+  caption?: string;
+  highlightElements?: boolean;
+  highlightIndices?: boolean;
+  arrayName?: string;
+  nameHint?: string;
+  showIndex?: boolean;
+};
 
 const integerValues = [8, 5, 0, 1, 4, 9, 3];
 const characterValues = ["a", "b", "c", "d", "e", "f", "g"];
@@ -108,14 +132,55 @@ interface ArrayVisualizerProps {
 }
 
 export function ArrayVisualizer({ lesson }: ArrayVisualizerProps) {
-  const frames =
-    lesson.segment === "what-is-an-array"
-      ? [...introFrames, buildCheckpointFrame(lesson.checkpoint)]
-      : buildFramesFromLesson(lesson);
+  const frames = useMemo(
+    () =>
+      lesson.segment === "what-is-an-array"
+        ? [...introFrames, buildCheckpointFrame(lesson.checkpoint)]
+        : buildFramesFromLesson(lesson),
+    [lesson]
+  );
   const [frameIndex, setFrameIndex] = useState(0);
+  const [runtimeOverride, setRuntimeOverride] = useState<RuntimeArrayOverride | null>(null);
   const frame = frames[frameIndex];
+  const displayFrame = applyRuntimeOverride(frame, runtimeOverride);
   const canGoBack = frameIndex > 0;
   const canGoNext = frameIndex < frames.length - 1;
+  const handleRealtimeUiAction = (action: ArrayRealtimeUiAction) => {
+    const nextState = getNextLessonScreenState({
+      action,
+      frames,
+      frameIndex,
+      runtimeOverride,
+      lesson,
+    });
+
+    setFrameIndex(nextState.frameIndex);
+    setRuntimeOverride(nextState.runtimeOverride);
+
+    return buildScreenContext({
+      lesson,
+      frameIndex: nextState.frameIndex,
+      frameCount: frames.length,
+      frame: applyRuntimeOverride(frames[nextState.frameIndex], nextState.runtimeOverride),
+    });
+  };
+  const realtime = useArrayRealtimeTutor({
+    lessonTitle: lesson.title,
+    lessonGoal: lesson.lessonGoal,
+    onUiAction: handleRealtimeUiAction,
+  });
+  const { syncScreenContext } = realtime;
+
+  useEffect(() => {
+    syncScreenContext(
+      buildScreenContext({
+        lesson,
+        frameIndex,
+        frameCount: frames.length,
+        frame: displayFrame,
+      })
+    );
+  }, [displayFrame, frameIndex, frames.length, lesson, syncScreenContext]);
 
   return (
     <section className="relative flex min-h-[calc(100svh-14rem)] flex-col overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 text-foreground shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
@@ -141,10 +206,10 @@ export function ArrayVisualizer({ lesson }: ArrayVisualizerProps) {
 
       <div className="flex flex-1 flex-col gap-5 bg-[radial-gradient(circle_at_top,rgba(220,38,38,0.07),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] px-4 py-4 md:px-6 md:py-6">
         <div className="flex min-h-0 flex-1 items-center justify-center">
-          {frame.kind === "visual" ? (
-            <VisualSlide frame={frame} />
+          {displayFrame.kind === "visual" ? (
+            <VisualSlide frame={displayFrame} />
           ) : (
-            <CheckpointSlide checkpoint={frame.checkpoint} />
+            <CheckpointSlide checkpoint={displayFrame.checkpoint} />
           )}
         </div>
 
@@ -152,11 +217,14 @@ export function ArrayVisualizer({ lesson }: ArrayVisualizerProps) {
           <RoundStepButton
             direction="back"
             disabled={!canGoBack}
-            onClick={() => setFrameIndex((current) => Math.max(0, current - 1))}
+            onClick={() => {
+              setRuntimeOverride(null);
+              setFrameIndex((current) => Math.max(0, current - 1));
+            }}
           />
 
           <p className="mx-auto max-w-3xl text-center text-sm leading-6 text-muted-foreground md:text-base">
-            {frame.caption}
+            {displayFrame.caption}
           </p>
 
           <div className="grid justify-items-center gap-2">
@@ -166,13 +234,16 @@ export function ArrayVisualizer({ lesson }: ArrayVisualizerProps) {
             <RoundStepButton
               direction="next"
               disabled={!canGoNext}
-              onClick={() =>
-                setFrameIndex((current) => Math.min(frames.length - 1, current + 1))
-              }
+              onClick={() => {
+                setRuntimeOverride(null);
+                setFrameIndex((current) => Math.min(frames.length - 1, current + 1));
+              }}
             />
           </div>
         </div>
       </div>
+
+      <RealtimeLessonControls realtime={realtime} />
     </section>
   );
 }
@@ -198,6 +269,317 @@ function VisualSlide({ frame }: { frame: VisualArrayFrame }) {
           highlightElements={frame.highlightElements}
           highlightIndices={frame.highlightIndices}
         />
+      )}
+    </div>
+  );
+}
+
+function getNextLessonScreenState({
+  action,
+  frames,
+  frameIndex,
+  runtimeOverride,
+  lesson,
+}: {
+  action: ArrayRealtimeUiAction;
+  frames: ArrayFrame[];
+  frameIndex: number;
+  runtimeOverride: RuntimeArrayOverride | null;
+  lesson: ArrayLessonDefinition;
+}) {
+  const currentFrame = frames[frameIndex];
+  const currentData =
+    currentFrame.kind === "visual"
+      ? runtimeOverride?.data ?? currentFrame.data ?? valuesForFrame(currentFrame.visual)
+      : lesson.cells.map((cell) => cell.value);
+
+  switch (action.action) {
+    case "next":
+      return {
+        frameIndex: Math.min(frames.length - 1, frameIndex + 1),
+        runtimeOverride: null,
+      };
+    case "previous":
+      return {
+        frameIndex: Math.max(0, frameIndex - 1),
+        runtimeOverride: null,
+      };
+    case "goto":
+      return {
+        frameIndex: clampFrameIndex(action.frame_index ?? 0, frames.length),
+        runtimeOverride: null,
+      };
+    case "highlight_index":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          data: runtimeOverride?.data,
+          activeIndex: action.index,
+          caption: action.caption ?? runtimeOverride?.caption,
+          highlightElements: false,
+          highlightIndices: false,
+        },
+      };
+    case "highlight_indices":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          data: runtimeOverride?.data,
+          activeIndex: null,
+          caption: action.caption ?? "Each slot has an index. The first index is 0.",
+          highlightIndices: true,
+          highlightElements: false,
+        },
+      };
+    case "highlight_elements":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          data: runtimeOverride?.data,
+          activeIndex: null,
+          caption: action.caption ?? "The boxes are the array elements. Each one stores a value.",
+          highlightElements: true,
+          highlightIndices: false,
+        },
+      };
+    case "set_array":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          data: action.values ?? currentData,
+          activeIndex: action.index,
+          caption: action.caption,
+          highlightElements: false,
+          highlightIndices: false,
+        },
+      };
+    case "set_array_name":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          arrayName: action.array_name?.trim() || "A",
+          caption:
+            action.caption ??
+            `This array is now named ${action.array_name?.trim() || "A"}.`,
+        },
+      };
+    case "show_indices":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          showIndex: true,
+          activeIndex: null,
+          caption: action.caption ?? "These numbers are the indexes for the current array.",
+          highlightIndices: true,
+          highlightElements: false,
+        },
+      };
+    case "hide_indices":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          showIndex: false,
+          caption: action.caption ?? "Indexes are hidden so we can focus only on the values.",
+          highlightIndices: false,
+        },
+      };
+    case "set_caption":
+      return {
+        frameIndex,
+        runtimeOverride: {
+          ...runtimeOverride,
+          caption: action.caption ?? frameCaptionToText(currentFrame.caption),
+        },
+      };
+    case "reset_array":
+      return {
+        frameIndex,
+        runtimeOverride: null,
+      };
+  }
+}
+
+function applyRuntimeOverride(
+  frame: ArrayFrame,
+  override: RuntimeArrayOverride | null
+): ArrayFrame {
+  if (!override || frame.kind !== "visual") {
+    return frame;
+  }
+
+  const data = override.data ?? frame.data ?? valuesForFrame(frame.visual);
+  const activeIndex = override.activeIndex === null ? undefined : override.activeIndex ?? frame.activeIndex;
+
+  return {
+    ...frame,
+    visual: frame.visual === "tree" ? "string-array" : frame.visual,
+    data,
+    caption: override.caption ?? frame.caption,
+    arrayName: override.arrayName ?? frame.arrayName,
+    nameHint: override.nameHint ?? frame.nameHint,
+    showIndex: override.showIndex ?? frame.showIndex,
+    activeIndex,
+    highlightElements: override.highlightElements ?? frame.highlightElements,
+    highlightIndices: override.highlightIndices ?? frame.highlightIndices,
+    dimElements: override.highlightIndices ? true : frame.dimElements,
+    dimIndices: override.highlightElements ? true : frame.dimIndices,
+    disabledElements:
+      activeIndex === undefined
+        ? frame.disabledElements
+        : data.reduce<number[]>((indices, _value, index) => {
+            if (index !== activeIndex) {
+              indices.push(index);
+            }
+
+            return indices;
+          }, []),
+  };
+}
+
+function buildScreenContext({
+  lesson,
+  frameIndex,
+  frameCount,
+  frame,
+}: {
+  lesson: ArrayLessonDefinition;
+  frameIndex: number;
+  frameCount: number;
+  frame: ArrayFrame;
+}) {
+  if (frame.kind === "checkpoint") {
+    return [
+      `Lesson: ${lesson.title}`,
+      `Frame: ${frameIndex + 1} of ${frameCount}`,
+      "Screen type: checkpoint question",
+      `Question: ${frame.checkpoint?.prompt ?? "No checkpoint question"}`,
+      `Caption: ${frameCaptionToText(frame.caption)}`,
+      "Available UI actions: next, previous, goto, set_caption.",
+    ].join("\n");
+  }
+
+  const values = frame.data ?? valuesForFrame(frame.visual);
+  const activeIndex =
+    frame.activeIndex === undefined ? "none" : `${frame.activeIndex} (value ${values[frame.activeIndex]})`;
+
+  return [
+    `Lesson: ${lesson.title}`,
+    `Frame: ${frameIndex + 1} of ${frameCount}`,
+    `Screen type: ${frame.visual}`,
+    `Array name: ${frame.arrayName ?? "none"}`,
+    `Indexes visible: ${frame.showIndex !== false}`,
+    `Visible values: [${values.join(", ")}]`,
+    `Visible indices: ${values.map((_value, index) => index).join(", ")}`,
+    `Highlighted index: ${activeIndex}`,
+    `Highlighting all indices: ${Boolean(frame.highlightIndices)}`,
+    `Highlighting all elements: ${Boolean(frame.highlightElements)}`,
+    `Caption: ${frameCaptionToText(frame.caption)}`,
+    "Available UI actions: next, previous, goto, highlight_index, highlight_indices, highlight_elements, set_array, set_array_name, show_indices, hide_indices, set_caption, reset_array.",
+  ].join("\n");
+}
+
+function frameCaptionToText(caption: React.ReactNode) {
+  if (typeof caption === "string" || typeof caption === "number") {
+    return String(caption);
+  }
+
+  return "See the current visual caption on screen.";
+}
+
+function clampFrameIndex(index: number, frameCount: number) {
+  return Math.max(0, Math.min(frameCount - 1, index));
+}
+
+function RealtimeLessonControls({
+  realtime,
+}: {
+  realtime: ReturnType<typeof useArrayRealtimeTutor>;
+}) {
+  const isConnecting = realtime.status === "connecting";
+  const statusLabel =
+    realtime.status === "connected"
+      ? realtime.connectionMode === "audio"
+        ? "Voice replies"
+        : "Listen-only"
+      : realtime.status === "muted"
+        ? "Muted"
+        : realtime.status === "connecting"
+          ? "Connecting"
+          : realtime.status === "error"
+            ? "Voice unavailable"
+            : "Voice ready";
+
+  return (
+    <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full border border-border bg-background/85 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.28)] backdrop-blur-md">
+      <span className="hidden px-2 text-xs font-medium text-muted-foreground md:inline">
+        {statusLabel}
+      </span>
+
+      {!realtime.isConnected ? (
+        <>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => realtime.start("audio")}
+            disabled={isConnecting}
+            aria-label="Connect with voice responses"
+            title={realtime.error ?? "Connect with voice responses"}
+            className="rounded-full bg-primary/10 px-3 text-primary hover:bg-primary/15"
+          >
+            {isConnecting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Volume2 className="size-4" />
+            )}
+            <span className="hidden text-xs font-medium md:inline">Voice</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => realtime.start("listen_only")}
+            disabled={isConnecting}
+            aria-label="Connect in listen-only mode"
+            title={realtime.error ?? "Connect in listen-only mode"}
+            className="rounded-full bg-card px-3 text-foreground hover:bg-accent/60"
+          >
+            {isConnecting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <VolumeX className="size-4" />
+            )}
+            <span className="hidden text-xs font-medium md:inline">Listen-only</span>
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button
+            size="icon-lg"
+            variant="ghost"
+            onClick={realtime.toggleMute}
+            aria-label={realtime.isMuted ? "Unmute voice tutor" : "Mute voice tutor"}
+            title={realtime.isMuted ? "Unmute" : "Mute"}
+            className="rounded-full bg-card text-foreground hover:bg-accent/60"
+          >
+            {realtime.isMuted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+          </Button>
+          <Button
+            size="icon-lg"
+            variant="ghost"
+            onClick={realtime.stop}
+            aria-label="End voice tutor"
+            title="End"
+            className="rounded-full bg-card text-foreground hover:bg-accent/60"
+          >
+            <Square className="size-4" />
+          </Button>
+        </>
       )}
     </div>
   );

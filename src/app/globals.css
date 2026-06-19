@@ -30,7 +30,7 @@
   --color-darkest-gray: #121212;
   /* --color-orange: #ff4d00; */
   --color-orange: #DC2626;
-  --color-orange-rgb: 255 77 0;
+  --color-orange-rgb: 220 38 38;
   --color-red: red;
 
   /* Utility tokens */
@@ -96,43 +96,43 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* Light mode (kept for compatibility, but app defaults to dark) */
+/* Light mode tokens. The app still defaults to dark via ThemeProvider. */
 :root {
-  --background: #000000;
-  --foreground: #efefef;
-  --card: #121212;
-  --card-foreground: #efefef;
-  --popover: #121212;
-  --popover-foreground: #efefef;
+  --background: #f7f8fb;
+  --foreground: #151515;
+  --card: #ffffff;
+  --card-foreground: #151515;
+  --popover: #ffffff;
+  --popover-foreground: #151515;
   --primary: #DC2626;
-  --primary-foreground: #efefef;
-  --secondary: #232323;
-  --secondary-foreground: #efefef;
-  --muted: #1a1a1a;
-  --muted-foreground: #747474;
-  --accent: #3a3a3a;
-  --accent-foreground: #efefef;
-  --destructive: #ff0000;
-  --border: #232323;
-  --input: #232323;
-  --ring: #ff4d00;
-  --chart-1: #ff4d00;
-  --chart-2: #ff6a2a;
-  --chart-3: #ff8855;
-  --chart-4: #ffa57f;
-  --chart-5: #ffc3aa;
+  --primary-foreground: #ffffff;
+  --secondary: #edf0f4;
+  --secondary-foreground: #151515;
+  --muted: #edf0f4;
+  --muted-foreground: #687385;
+  --accent: #e6e9ef;
+  --accent-foreground: #111827;
+  --destructive: #dc2626;
+  --border: #d9dee8;
+  --input: #d9dee8;
+  --ring: #dc2626;
+  --chart-1: #dc2626;
+  --chart-2: #f97316;
+  --chart-3: #2563eb;
+  --chart-4: #16a34a;
+  --chart-5: #7c3aed;
   --radius: 0.625rem;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #efefef;
-  --sidebar-primary: #ff4d00;
-  --sidebar-primary-foreground: #efefef;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #efefef;
-  --sidebar-border: #232323;
-  --sidebar-ring: #ff4d00;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #151515;
+  --sidebar-primary: #dc2626;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #edf0f4;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #d9dee8;
+  --sidebar-ring: #dc2626;
 }
 
-/* Dark mode class (matches root since the app IS dark) */
+/* Dark mode class. */
 .dark {
   --background: #000000;
   --foreground: #efefef;
@@ -140,8 +140,8 @@
   --card-foreground: #efefef;
   --popover: #121212;
   --popover-foreground: #efefef;
-  --primary: #ff4d00;
-  --primary-foreground: #efefef;
+  --primary: #dc2626;
+  --primary-foreground: #ffffff;
   --secondary: #232323;
   --secondary-foreground: #efefef;
   --muted: #1a1a1a;
@@ -151,20 +151,20 @@
   --destructive: #ff0000;
   --border: #232323;
   --input: #232323;
-  --ring: #ff4d00;
-  --chart-1: #ff4d00;
+  --ring: #dc2626;
+  --chart-1: #dc2626;
   --chart-2: #ff6a2a;
   --chart-3: #ff8855;
   --chart-4: #ffa57f;
   --chart-5: #ffc3aa;
   --sidebar: #0a0a0a;
   --sidebar-foreground: #efefef;
-  --sidebar-primary: #ff4d00;
-  --sidebar-primary-foreground: #efefef;
+  --sidebar-primary: #dc2626;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #efefef;
   --sidebar-border: #232323;
-  --sidebar-ring: #ff4d00;
+  --sidebar-ring: #dc2626;
 }
 
 /* ─── Global Resets & Base Styles (Pi style) ─── */
@@ -176,7 +176,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-black);
+  background-color: var(--background);
   /* scrollbar-color: var(--color-orange) var(--color-black); */
 }
 
@@ -290,4 +290,96 @@ html ::-webkit-scrollbar-track {
 /* Smooth transition for all interactive state changes */
 .transition-pi {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Puck's non-iframe preview renders its own frame wrapper; keep it filling our canvas pane. */
+.canvas-preview-pane [data-puck-preview],
+.canvas-preview-pane #preview-frame {
+  min-height: 100%;
+}
+
+.canvas-component-palette [class*="ComponentList"] {
+  min-width: 0;
+}
+
+.canvas-component-palette > [class*="ComponentList"]:first-child [class*="ComponentList-content"] > [class*="_Drawer_"] {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.canvas-component-palette > [class*="ComponentList"]:not(:first-child) [class*="ComponentList-content"] > [class*="_Drawer_"] {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.canvas-component-palette [class*="ComponentList-title"] {
+  border-radius: 0.625rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 0.35rem 0.2rem 0.55rem;
+  text-transform: uppercase;
+}
+
+.canvas-component-palette [data-puck-drawer-item] {
+  min-width: 0;
+}
+
+.canvas-drawer-card {
+  align-items: center;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 1.35rem;
+  display: flex;
+  gap: 0.8rem;
+  min-height: 4.4rem;
+  padding: 0.85rem 1rem;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.canvas-component-palette [data-puck-drawer-item]:hover .canvas-drawer-card {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.12);
+  transform: translateY(-1px);
+}
+
+.canvas-drawer-card--text {
+  padding-block: 0.65rem;
+}
+
+.canvas-component-palette > [class*="ComponentList"]:not(:first-child) .canvas-drawer-card--default {
+  align-content: start;
+  align-items: flex-start;
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.6rem;
+  min-height: 7.4rem;
+  padding: 0.8rem;
+}
+
+.canvas-component-palette > [class*="ComponentList"]:not(:first-child) .canvas-drawer-card--default > div:first-child {
+  display: grid;
+  height: 2.5rem;
+  place-items: center;
+  width: 2.5rem;
+}
+
+.canvas-component-palette [data-testid="drawer-item:TextBlock"] {
+  display: none;
+}
+
+.canvas-frame-menu summary {
+  list-style: none;
+}
+
+.canvas-frame-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.canvas-frame-menu[open] > summary {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+  color: var(--foreground);
 }

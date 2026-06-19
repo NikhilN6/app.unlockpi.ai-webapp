@@ -15,7 +15,6 @@ import {
   Settings2Icon,
 } from "lucide-react"
 import type { ComponentType } from "react"
-import { VscCommentDiscussionSparkle } from "react-icons/vsc"
 import { PiChalkboardDuotone } from "react-icons/pi";
 
 import { createClient } from "@/lib/client"
@@ -54,15 +53,15 @@ type SidebarUser = {
 }
 
 const topItems: MainItem[] = [
-  {
-    title: "Interviews",
-    url: "/dashboard/interview",
-    icon: VscCommentDiscussionSparkle,
-  },
+  // {
+  //   title: "Interviews",
+  //   url: "/dashboard/interview",
+  //   icon: VscCommentDiscussionSparkle,
+  // },
   {
     title: "Courses",
     url: "/dashboard/courses",
-    icon: PiChalkboardDuotone ,
+    icon: PenLineIcon ,
   },
   {
     title: "Projects",
@@ -72,10 +71,9 @@ const topItems: MainItem[] = [
 ]
 
 const quickAction = {
-  title: "New session",
-  url: "/dashboard/session/new",
-  icon: PenLineIcon,
-  hint: "Open session intake and start teaching flow",
+  title: "Canvas",
+  url: "/dashboard/canvas",
+  icon: PiChalkboardDuotone,
 }
 
 function SidebarCollapseButton() {
@@ -109,6 +107,7 @@ export function AppSidebar({
   const { state: sidebarState, toggleSidebar, isMobile } = useSidebar()
   const isSidebarCollapsed = sidebarState === "collapsed"
   const userInitial = currentUser?.name?.trim().charAt(0).toUpperCase() || "U"
+  const isCanvasActive = pathname === quickAction.url
 
   const navigateTo = (href: string) => {
     push(href)
@@ -177,14 +176,12 @@ export function AppSidebar({
             <SidebarMenuButton
               render={<Link href={quickAction.url} />}
               tooltip={quickAction.title}
+              isActive={isCanvasActive}
               className="h-auto min-h-10 items-start gap-2.5 py-2 group-data-[collapsible=icon]:items-center"
             >
               <quickAction.icon className="mt-0.5 size-4 shrink-0" />
               <div className="grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden">
                 <span className="truncate">{quickAction.title}</span>
-                <span className="truncate text-xs font-normal text-muted-foreground">
-                  {quickAction.hint}
-                </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

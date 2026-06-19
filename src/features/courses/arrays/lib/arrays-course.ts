@@ -53,7 +53,7 @@ export const arraysCourse = {
         "Build the first mental model: arrays are not just data, they are positions plus values.",
       learningFocus: [
         "Every value sits in a numbered slot.",
-        "The order matters because each slot has meaning.",
+        "The order matters because each Aslot has meaning.",
         "You can think of the whole structure as one line, not scattered variables.",
       ],
       voiceSeedPrompt:

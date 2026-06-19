@@ -1,21 +1,23 @@
 /**
  * Root layout — applies global fonts and styles.
- * Uses Manrope for body text and JetBrains Mono for code,
+ * Uses Inter for body text and Geist Mono for code,
  * matching the Pi AI web design system.
  */
 
 import type { Metadata } from "next";
-import { Manrope, JetBrains_Mono, Inter, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter, Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "streamdown/styles.css";
+import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-const interHeading = Inter({subsets:['latin'],variable:'--font-heading'});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const canvasBody = Inter({ subsets: ["latin"], variable: "--font-canvas-body" });
+const canvasSubheading = Manrope({ subsets: ["latin"], variable: "--font-canvas-subheading" });
+const canvasHeading = Space_Grotesk({ subsets: ["latin"], variable: "--font-canvas-heading" });
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
-
-const geistMono = Geist_Mono({subsets:['latin'],variable:'--font-mono'});
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: "UnlockPi — AI Classroom Tutor",
@@ -37,9 +39,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-mono", inter.variable, interHeading.variable, geistMono.variable)}>
+    <html
+      lang="en"
+      className={cn(
+        "dark font-mono",
+        inter.variable,
+        canvasBody.variable,
+        canvasSubheading.variable,
+        canvasHeading.variable,
+        geistMono.variable
+      )}
+      suppressHydrationWarning
+    >
       <body className="antialiased" suppressHydrationWarning>
-        <TooltipProvider>{children}</TooltipProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

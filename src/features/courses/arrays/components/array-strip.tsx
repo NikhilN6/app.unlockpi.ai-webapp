@@ -19,9 +19,11 @@ type ArrayStripProps = {
   className?: string;
 };
 
+const EMPTY_DISABLED_ELEMENTS: number[] = [];
+
 export function ArrayStrip({
   data,
-  disabledElements = [],
+  disabledElements = EMPTY_DISABLED_ELEMENTS,
   name,
   nameHint,
   accessExpression,

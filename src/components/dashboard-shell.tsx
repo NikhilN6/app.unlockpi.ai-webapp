@@ -28,6 +28,14 @@ export function DashboardShell({
     pathSegments[0] === "dashboard" &&
     pathSegments[1] === "courses" &&
     pathSegments.length > 3;
+  const isInsideCanvas =
+    pathSegments[0] === "dashboard" &&
+    pathSegments[1] === "canvas" &&
+    pathSegments.length > 2;
+
+  if (isInsideCanvas) {
+    return <main className="flex h-svh min-h-0 flex-1 flex-col overflow-hidden">{children}</main>;
+  }
 
   if (isInsideCourseLesson) {
     return <main className="flex min-h-svh flex-1 flex-col">{children}</main>;

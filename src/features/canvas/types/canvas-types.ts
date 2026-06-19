@@ -1,0 +1,143 @@
+import type { Data, Slot } from "@puckeditor/core";
+
+export type CanvasSubject = "computer_science";
+
+export type CanvasRootProps = {
+  title: string;
+  subject: CanvasSubject;
+};
+
+export type SlideBlockProps = {
+  frameLabel?: string;
+  title: string;
+  teachingBeat: "hook" | "explain" | "practice" | "recap";
+  notes: string;
+  content: Slot;
+};
+
+export type TextBlockProps = {
+  eyebrow: string;
+  heading: string;
+  body: string;
+};
+
+export type HeadingTextBlockProps = {
+  text: string;
+};
+
+export type SubheadingTextBlockProps = {
+  text: string;
+};
+
+export type BodyTextBlockProps = {
+  text: string;
+};
+
+export type ArrayBlockProps = {
+  title: string;
+  values: Array<{ value: string }>;
+  highlightedIndex?: number;
+  showIndices: boolean;
+  caption: string;
+};
+
+export type LinkedListBlockProps = {
+  title: string;
+  nodes: Array<{ value: string }>;
+  caption: string;
+};
+
+export type MindMapBlockProps = {
+  title: string;
+  center: string;
+  branches: Array<{ label: string; detail: string }>;
+};
+
+export type CodeLanguage =
+  | "javascript"
+  | "typescript"
+  | "python"
+  | "java"
+  | "cpp"
+  | "c"
+  | "go"
+  | "rust"
+  | "sql"
+  | "html"
+  | "css"
+  | "json"
+  | "markdown"
+  | "plaintext";
+
+export type CodeBlockProps = {
+  title: string;
+  language: CodeLanguage;
+  code: string;
+  explanation: string;
+};
+
+export type MermaidBlockProps = {
+  title: string;
+  chart: string;
+  caption: string;
+};
+
+export type CheckpointBlockProps = {
+  question: string;
+  answer: string;
+};
+
+export type CanvasComponents = {
+  SlideBlock: SlideBlockProps;
+  TextBlock: TextBlockProps;
+  HeadingTextBlock: HeadingTextBlockProps;
+  SubheadingTextBlock: SubheadingTextBlockProps;
+  BodyTextBlock: BodyTextBlockProps;
+  ArrayBlock: ArrayBlockProps;
+  LinkedListBlock: LinkedListBlockProps;
+  MindMapBlock: MindMapBlockProps;
+  CodeBlock: CodeBlockProps;
+  MermaidBlock: MermaidBlockProps;
+  CheckpointBlock: CheckpointBlockProps;
+};
+
+export type CanvasDocument = Data<CanvasComponents, CanvasRootProps>;
+
+export type CanvasTemplateKey =
+  | "array-intro"
+  | "array-operations"
+  | "linked-list-basics"
+  | "complexity-basics"
+  | "recursion-basics"
+  | "empty";
+
+export type CanvasTemplate = {
+  key: CanvasTemplateKey;
+  title: string;
+  description: string;
+  document: CanvasDocument;
+};
+
+export type CanvasAiAction =
+  | { action: "add_slide"; title?: string; notes?: string }
+  | { action: "add_frame"; title?: string; notes?: string }
+  | { action: "add_frame_below"; frameId?: string; title?: string; notes?: string }
+  | { action: "duplicate_frame"; frameId?: string }
+  | { action: "delete_frame"; frameId?: string }
+  | { action: "go_to_slide"; slideIndex?: number; slideId?: string }
+  | { action: "go_to_frame"; frameIndex?: number; frameId?: string }
+  | { action: "update_slide_title"; slideId?: string; title: string }
+  | { action: "update_frame_title"; frameId?: string; title: string }
+  | { action: "add_text_block"; heading?: string; body?: string }
+  | { action: "add_array_block"; title?: string; values?: string[] }
+  | { action: "set_array_values"; componentId?: string; values: string[] }
+  | { action: "resize_array"; componentId?: string; length: number }
+  | { action: "highlight_array_index"; componentId?: string; index?: number }
+  | { action: "add_linked_list_block"; values?: string[] }
+  | { action: "add_checkpoint"; question?: string; answer?: string };
+
+export type CanvasCommandResult = {
+  document: CanvasDocument;
+  activeSlideId: string | null;
+  message: string;
+};
