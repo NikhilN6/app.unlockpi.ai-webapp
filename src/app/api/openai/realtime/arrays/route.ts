@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { createRealtimeUsageSession } from "@/features/realtime/lib/realtime-usage-server";
+import { createClient } from "@/lib/server";
+
 export const runtime = "nodejs";
 
-const DEFAULT_REALTIME_MODEL = "gpt-realtime";
+const DEFAULT_REALTIME_MODEL = "gpt-realtime-2";
 const DEFAULT_REALTIME_VOICE = "marin";
 const DEFAULT_OUTPUT_MODALITIES = "text";
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -120,7 +131,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ...data, model, output_modalities: outputModalities });
+  const usageSessionId = await createRealtimeUsageSession({
+    supabase,
+    ownerId: user.id,
+    source: "course",
+    lessonTitle: body.lessonTitle ?? "Arrays lesson",
+    mode: body.responseMode ?? "listen_only",
+    model,
+    openaiSessionId: data?.session?.id ?? data?.id,
+  });
+
+  return NextResponse.json({
+    ...data,
+    model,
+    output_modalities: outputModalities,
+    usage_session_id: usageSessionId,
+  });
 }
 
 function buildArrayTutorInstructions(lessonTitle?: string, lessonGoal?: string) {

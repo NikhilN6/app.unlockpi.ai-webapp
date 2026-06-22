@@ -183,7 +183,7 @@ export function ArrayVisualizer({ lesson }: ArrayVisualizerProps) {
   }, [displayFrame, frameIndex, frames.length, lesson, syncScreenContext]);
 
   return (
-    <section className="relative flex min-h-[calc(100svh-14rem)] flex-col overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 text-foreground shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+    <section className="relative flex min-h-[calc(100svh-14rem)] flex-col bg-pink-700- overflow-hidden rounded-[2rem] border border-border/80 bg-card/95 text-foreground shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
       <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 md:px-6">
         <Button
           variant="ghost"

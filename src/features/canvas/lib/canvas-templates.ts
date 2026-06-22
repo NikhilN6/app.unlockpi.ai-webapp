@@ -22,6 +22,8 @@ function createDocument(title: string, content: CanvasContent): CanvasDocument {
       props: {
         title,
         subject: "computer_science",
+        theme: "studio",
+        typographyScale: "base",
       },
     },
     content: content.map((item, index) =>

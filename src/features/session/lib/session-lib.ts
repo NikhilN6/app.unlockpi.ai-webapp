@@ -1,5 +1,8 @@
 import { TeachingSession, SessionDraft } from "../types/session-types"
 
+export const teachingSessionSelect =
+  "id, owner_id, project_id, title, topic, learning_goals, lesson_structure, content_outline, status, is_live, created_at, updated_at"
+
 export const emptySessionDraft: SessionDraft = {
   project_id: "",
   title: "",
@@ -45,4 +48,20 @@ export function createSessionDraftFromSession(session: TeachingSession): Session
     lesson_structure: session.lesson_structure,
     content_outline: session.content_outline ?? "",
   }
+}
+
+export function getSessionPreviewText(session: TeachingSession, maxLength = 160) {
+  const previewSource =
+    session.content_outline || session.lesson_structure || session.learning_goals || ""
+
+  const previewText = previewSource.replace(/\s+/g, " ").trim()
+  if (!previewText) {
+    return "No session summary yet."
+  }
+
+  if (previewText.length <= maxLength) {
+    return previewText
+  }
+
+  return `${previewText.slice(0, maxLength).trimEnd()}...`
 }

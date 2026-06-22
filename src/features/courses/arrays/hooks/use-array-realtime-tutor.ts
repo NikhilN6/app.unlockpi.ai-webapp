@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  finishRealtimeUsageSession,
+  trackRealtimeResponse,
+} from "@/features/realtime/lib/realtime-usage-client";
+import type { RealtimeUsageResponse } from "@/features/realtime/types/realtime-usage";
+
 type ArrayRealtimeStatus = "idle" | "connecting" | "connected" | "muted" | "error";
 export type ArrayRealtimeConnectionMode = "audio" | "listen_only";
 
@@ -36,7 +42,7 @@ type RealtimeServerEvent = {
   name?: string;
   arguments?: string;
   call_id?: string;
-  response?: {
+  response?: RealtimeUsageResponse & {
     output?: Array<{
       type?: string;
       name?: string;
@@ -63,12 +69,15 @@ export function useArrayRealtimeTutor({
   const latestScreenContextRef = useRef("");
   const onUiActionRef = useRef(onUiAction);
   const connectionModeRef = useRef<ArrayRealtimeConnectionMode | null>(null);
+  const usageSessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     onUiActionRef.current = onUiAction;
   }, [onUiAction]);
 
   const stop = useCallback(() => {
+    finishRealtimeUsageSession(usageSessionIdRef.current);
+    usageSessionIdRef.current = null;
     dataChannelRef.current?.close();
     dataChannelRef.current = null;
 
@@ -202,6 +211,10 @@ export function useArrayRealtimeTutor({
           handleFunctionCall(item.name, item.arguments, item.call_id);
         }
       });
+
+      if (event.type === "response.done") {
+        trackRealtimeResponse(usageSessionIdRef.current, event.response);
+      }
     },
     [handleFunctionCall]
   );
@@ -234,6 +247,7 @@ export function useArrayRealtimeTutor({
       if (!ephemeralKey) {
         throw new Error("Realtime client secret was missing from the server response.");
       }
+      usageSessionIdRef.current = tokenData.usage_session_id ?? null;
 
       const peerConnection = new RTCPeerConnection();
       peerConnectionRef.current = peerConnection;
@@ -300,6 +314,8 @@ export function useArrayRealtimeTutor({
         sdp: await sdpResponse.text(),
       });
     } catch (unknownError) {
+      finishRealtimeUsageSession(usageSessionIdRef.current, "failed");
+      usageSessionIdRef.current = null;
       stop();
       setStatus("error");
       setError(unknownError instanceof Error ? unknownError.message : "Realtime connection failed.");
