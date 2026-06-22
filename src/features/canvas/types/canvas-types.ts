@@ -2,9 +2,19 @@ import type { Data, Slot } from "@puckeditor/core";
 
 export type CanvasSubject = "computer_science";
 
+export type CanvasThemeId =
+  | "studio"
+  | "notebook"
+  | "chalkboard"
+  | "blueprint";
+
+export type CanvasTypographyScale = "base" | "medium" | "small";
+
 export type CanvasRootProps = {
   title: string;
   subject: CanvasSubject;
+  theme: CanvasThemeId;
+  typographyScale: CanvasTypographyScale;
 };
 
 export type SlideBlockProps = {
@@ -13,12 +23,6 @@ export type SlideBlockProps = {
   teachingBeat: "hook" | "explain" | "practice" | "recap";
   notes: string;
   content: Slot;
-};
-
-export type TextBlockProps = {
-  eyebrow: string;
-  heading: string;
-  body: string;
 };
 
 export type HeadingTextBlockProps = {
@@ -89,7 +93,6 @@ export type CheckpointBlockProps = {
 
 export type CanvasComponents = {
   SlideBlock: SlideBlockProps;
-  TextBlock: TextBlockProps;
   HeadingTextBlock: HeadingTextBlockProps;
   SubheadingTextBlock: SubheadingTextBlockProps;
   BodyTextBlock: BodyTextBlockProps;
@@ -121,7 +124,12 @@ export type CanvasTemplate = {
 export type CanvasAiAction =
   | { action: "add_slide"; title?: string; notes?: string }
   | { action: "add_frame"; title?: string; notes?: string }
-  | { action: "add_frame_below"; frameId?: string; title?: string; notes?: string }
+  | {
+      action: "add_frame_below";
+      frameId?: string;
+      title?: string;
+      notes?: string;
+    }
   | { action: "duplicate_frame"; frameId?: string }
   | { action: "delete_frame"; frameId?: string }
   | { action: "go_to_slide"; slideIndex?: number; slideId?: string }

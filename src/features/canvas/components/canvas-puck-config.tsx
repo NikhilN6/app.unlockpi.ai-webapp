@@ -2,7 +2,12 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import type { Config, SlotComponent } from "@puckeditor/core";
-import { CopyIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import {
+  CopyIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import {
   Drawer,
   DrawerClose,
@@ -31,9 +36,15 @@ import type {
   MindMapBlockProps,
   SlideBlockProps,
   SubheadingTextBlockProps,
-  TextBlockProps,
 } from "@/features/canvas/types/canvas-types";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_CANVAS_THEME,
+  DEFAULT_CANVAS_TYPOGRAPHY_SCALE,
+  canvasThemeOptions,
+  canvasTypographyOptions,
+  getCanvasThemeStyle,
+} from "@/features/canvas/lib/canvas-theme";
 
 const beatLabels: Record<SlideBlockProps["teachingBeat"], string> = {
   hook: "Hook",
@@ -41,18 +52,6 @@ const beatLabels: Record<SlideBlockProps["teachingBeat"], string> = {
   practice: "Practice",
   recap: "Recap",
 };
-
-const frameTheme = {
-  "--background": "#ffffff",
-  "--foreground": "#101318",
-  "--card": "#ffffff",
-  "--card-foreground": "#101318",
-  "--border": "#d7dee8",
-  "--muted": "#eef2f7",
-  "--muted-foreground": "#5d6878",
-  "--primary": "#2563eb",
-  "--primary-foreground": "#ffffff",
-} as CSSProperties;
 
 const headingFontStyle = {
   fontFamily: "var(--font-canvas-heading), var(--font-system), sans-serif",
@@ -84,12 +83,17 @@ const codeLanguageOptions: Array<{ label: string; value: CodeLanguage }> = [
 ];
 
 const codeLanguageLabels = Object.fromEntries(
-  codeLanguageOptions.map((option) => [option.value, option.label])
+  codeLanguageOptions.map((option) => [option.value, option.label]),
 ) as Record<CodeLanguage, string>;
 
 function blockShell(className: string | undefined, children: ReactNode) {
   return (
-    <section className={cn("rounded-lg border border-border bg-card p-5 shadow-xs", className)}>
+    <section
+      className={cn(
+        "rounded-lg border border-border bg-card p-5 shadow-xs",
+        className,
+      )}
+    >
       {children}
     </section>
   );
@@ -118,7 +122,7 @@ function FrameMenuItem({
       data-canvas-frame-id={frameId}
       className={cn(
         "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground transition hover:bg-muted",
-        className
+        className,
       )}
     >
       {children}
@@ -137,7 +141,10 @@ function SlideBlock({
   const label = frameLabel ?? "Frame";
 
   return (
-    <article id={`canvas-slide-${id}`} className="mx-auto w-full max-w-5xl scroll-mt-4">
+    <article
+      id={`canvas-slide-${id}`}
+      className="mx-auto w-full max-w-5xl scroll-mt-4"
+    >
       <div className="mb-0 flex items-center justify-between gap-3 px-1 text-foreground">
         <div className="flex min-w-0 items-center gap-2">
           <p className="shrink-0 text-sm font-semibold">{label}</p>
@@ -159,27 +166,43 @@ function SlideBlock({
           >
             <MoreHorizontalIcon className="size-4" />
           </DrawerTrigger>
-          <DrawerPopup position="right" variant="inset" className="w-[min(22rem,100%-1rem)]">
+          <DrawerPopup
+            position="right"
+            variant="inset"
+            className="w-[min(22rem,100%-1rem)]"
+          >
             <DrawerHeader className="gap-1">
               <DrawerTitle>{label} actions</DrawerTitle>
               <DrawerDescription>{title}</DrawerDescription>
             </DrawerHeader>
             <DrawerPanel scrollable={false} className="pt-2">
               <DrawerMenu>
-                <DrawerClose render={<FrameMenuItem action="add" frameId={id} />}>
+                <DrawerClose
+                  render={<FrameMenuItem action="add" frameId={id} />}
+                >
                   <PlusIcon className="size-3.5" />
                   Add frame
                 </DrawerClose>
-                <DrawerClose render={<FrameMenuItem action="add-below" frameId={id} />}>
+                <DrawerClose
+                  render={<FrameMenuItem action="add-below" frameId={id} />}
+                >
                   <PlusIcon className="size-3.5" />
                   Add frame below
                 </DrawerClose>
-                <DrawerClose render={<FrameMenuItem action="duplicate" frameId={id} />}>
+                <DrawerClose
+                  render={<FrameMenuItem action="duplicate" frameId={id} />}
+                >
                   <CopyIcon className="size-3.5" />
                   Duplicate frame
                 </DrawerClose>
                 <DrawerClose
-                  render={<FrameMenuItem action="delete" frameId={id} className="text-destructive hover:bg-destructive/8 hover:text-destructive" />}
+                  render={
+                    <FrameMenuItem
+                      action="delete"
+                      frameId={id}
+                      className="text-destructive hover:bg-destructive/8 hover:text-destructive"
+                    />
+                  }
                 >
                   <Trash2Icon className="size-3.5" />
                   Delete frame
@@ -193,11 +216,10 @@ function SlideBlock({
       <section
         aria-label={`${label}: ${title}`}
         title={notes}
-        className="grid min-h-[560px] min-w-0 w-full content-start gap-5 rounded-lg border border-border bg-background p-4 text-foreground shadow-[0_22px_70px_rgba(15,23,42,0.18)] sm:p-5 lg:p-7"
+        className="grid min-h-[560px] min-w-0 w-full content-start gap-5 rounded-lg border border-border bg-background p-4 text-foreground shadow-[0_22px_70px_var(--canvas-shadow-color)] sm:p-5 lg:p-7"
       >
         <Content
           allow={[
-            "TextBlock",
             "HeadingTextBlock",
             "SubheadingTextBlock",
             "BodyTextBlock",
@@ -214,27 +236,11 @@ function SlideBlock({
     </article>
   );
 }
-function TextBlock({ eyebrow, heading, body }: TextBlockProps) {
-  return blockShell(
-    undefined,
-    <div className="grid gap-2">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        {eyebrow}
-      </p>
-      <h3 className="text-xl font-semibold tracking-tight" style={headingFontStyle}>
-        {heading}
-      </h3>
-      <p className="max-w-3xl text-sm leading-6 text-muted-foreground" style={bodyFontStyle}>
-        {body}
-      </p>
-    </div>
-  );
-}
 
 function HeadingTextBlock({ text }: HeadingTextBlockProps) {
   return (
     <h1
-      className="max-w-4xl text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-foreground"
+      className="max-w-4xl text-balance font-bold leading-[0.95] tracking-[-0.04em] text-foreground [font-size:var(--canvas-heading-size)]"
       style={headingFontStyle}
     >
       {text}
@@ -245,7 +251,7 @@ function HeadingTextBlock({ text }: HeadingTextBlockProps) {
 function SubheadingTextBlock({ text }: SubheadingTextBlockProps) {
   return (
     <h2
-      className="max-w-4xl text-3xl leading-tight tracking-[-0.03em] text-foreground"
+      className="max-w-4xl text-balance leading-tight tracking-[-0.03em] text-foreground [font-size:var(--canvas-subheading-size)]"
       style={subheadingFontStyle}
     >
       {text}
@@ -255,13 +261,22 @@ function SubheadingTextBlock({ text }: SubheadingTextBlockProps) {
 
 function BodyTextBlock({ text }: BodyTextBlockProps) {
   return (
-    <p className="max-w-3xl text-base leading-7 text-muted-foreground" style={bodyFontStyle}>
+    <p
+      className="max-w-3xl text-pretty text-muted-foreground [font-size:var(--canvas-body-size)] [line-height:var(--canvas-body-leading)]"
+      style={bodyFontStyle}
+    >
       {text}
     </p>
   );
 }
 
-function ArrayBlock({ title, values, highlightedIndex, showIndices, caption }: ArrayBlockProps) {
+function ArrayBlock({
+  title,
+  values,
+  highlightedIndex,
+  showIndices,
+  caption,
+}: ArrayBlockProps) {
   const arrayValues = values.map((item) => item.value);
 
   return blockShell(
@@ -278,7 +293,7 @@ function ArrayBlock({ title, values, highlightedIndex, showIndices, caption }: A
         name="A"
         showIndex={showIndices}
       />
-    </div>
+    </div>,
   );
 }
 
@@ -292,15 +307,20 @@ function LinkedListBlock({ title, nodes, caption }: LinkedListBlockProps) {
       </div>
       <div className="flex min-w-max items-center gap-3">
         {nodes.map((node, index) => (
-          <div key={`${node.value}-${index}`} className="flex items-center gap-3">
+          <div
+            key={`${node.value}-${index}`}
+            className="flex items-center gap-3"
+          >
             <div className="grid h-16 min-w-24 place-items-center rounded-lg border border-border bg-muted/30 px-4 text-lg font-semibold">
               {node.value}
             </div>
-            {index < nodes.length - 1 ? <span className="text-muted-foreground">{"->"}</span> : null}
+            {index < nodes.length - 1 ? (
+              <span className="text-muted-foreground">{"->"}</span>
+            ) : null}
           </div>
         ))}
       </div>
-    </div>
+    </div>,
   );
 }
 
@@ -315,14 +335,19 @@ function MindMapBlock({ title, center, branches }: MindMapBlockProps) {
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {branches.map((branch, index) => (
-            <div key={`${branch.label}-${index}`} className="rounded-lg border border-border p-3">
+            <div
+              key={`${branch.label}-${index}`}
+              className="rounded-lg border border-border p-3"
+            >
               <p className="font-medium">{branch.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{branch.detail}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {branch.detail}
+              </p>
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </div>,
   );
 }
 
@@ -348,14 +373,16 @@ function CodeBlock({ title, language, code, explanation }: CodeBlockProps) {
                 key={`${title}-${index}`}
                 className="grid grid-cols-[3rem_1fr] gap-3 px-4"
               >
-                <span className="select-none text-right text-zinc-500">{index + 1}</span>
+                <span className="select-none text-right text-zinc-500">
+                  {index + 1}
+                </span>
                 <span className="whitespace-pre">{line || " "}</span>
               </span>
             ))}
           </code>
         </pre>
       </div>
-    </>
+    </>,
   );
 }
 
@@ -370,7 +397,7 @@ function MermaidBlock({ title, chart, caption }: MermaidBlockProps) {
       <div className="overflow-hidden rounded-xl border border-border bg-muted/25 p-3">
         <MermaidDiagram chart={chart} />
       </div>
-    </>
+    </>,
   );
 }
 
@@ -385,7 +412,7 @@ function CheckpointBlock({ question, answer }: CheckpointBlockProps) {
       <p className="rounded-lg border border-emerald-500/20 bg-background/72 p-3 text-sm text-muted-foreground">
         {answer}
       </p>
-    </div>
+    </div>,
   );
 }
 
@@ -398,12 +425,31 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
         label: "Subject",
         options: [{ label: "Computer Science", value: "computer_science" }],
       },
+      theme: {
+        type: "select",
+        label: "Canvas theme",
+        options: canvasThemeOptions.map((theme) => ({
+          label: theme.name,
+          value: theme.id,
+        })),
+      },
+      typographyScale: {
+        type: "select",
+        label: "Typography size",
+        options: canvasTypographyOptions.map((scale) => ({
+          label: scale.name,
+          value: scale.id,
+        })),
+      },
     },
-    render: ({ children, title }) => (
+    render: ({ children, title, theme, typographyScale }) => (
       <main
         aria-label={title ? `${title} frames` : "Canvas frames"}
-        className="grid min-h-full w-full content-start gap-6 bg-[#e7ebf0] px-3 py-6 text-foreground sm:px-4 lg:px-6"
-        style={frameTheme}
+        className="grid min-h-full w-full content-start gap-6 bg-[var(--canvas-stage)] px-3 py-6 text-foreground transition-[background-color,color] duration-200 sm:px-4 lg:px-6"
+        style={getCanvasThemeStyle(
+          theme ?? DEFAULT_CANVAS_THEME,
+          typographyScale ?? DEFAULT_CANVAS_TYPOGRAPHY_SCALE,
+        )}
       >
         {children}
       </main>
@@ -412,11 +458,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
   categories: {
     text: {
       title: "Text",
-      components: [
-        "HeadingTextBlock",
-        "SubheadingTextBlock",
-        "BodyTextBlock",
-      ],
+      components: ["HeadingTextBlock", "SubheadingTextBlock", "BodyTextBlock"],
       defaultExpanded: true,
     },
     blocks: {
@@ -453,7 +495,6 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
           type: "slot",
           label: "Frame content",
           allow: [
-            "TextBlock",
             "HeadingTextBlock",
             "SubheadingTextBlock",
             "BodyTextBlock",
@@ -473,7 +514,9 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
         notes: "Add the teaching move for this frame.",
         content: [],
       },
-      render: ({ id, content, ...props }) => <SlideBlock {...props} id={id} content={content} />,
+      render: ({ id, content, ...props }) => (
+        <SlideBlock {...props} id={id} content={content} />
+      ),
     },
     HeadingTextBlock: {
       label: "Heading",
@@ -505,20 +548,6 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
       },
       render: BodyTextBlock,
     },
-    TextBlock: {
-      label: "Legacy text",
-      fields: {
-        eyebrow: { type: "text", label: "Eyebrow" },
-        heading: { type: "text", label: "Heading" },
-        body: { type: "textarea", label: "Body" },
-      },
-      defaultProps: {
-        eyebrow: "Concept",
-        heading: "New explanation",
-        body: "Write the classroom explanation here.",
-      },
-      render: TextBlock,
-    },
     ArrayBlock: {
       label: "Array",
       fields: {
@@ -532,8 +561,20 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
           defaultItemProps: { value: "0" },
           getItemSummary: (item, index) => `Index ${index}: ${item.value}`,
         },
-        highlightedIndex: { type: "number", label: "Highlighted index", min: 0, max: 11 },
-        showIndices: { type: "radio", label: "Show indices", options: [{ label: "Yes", value: true }, { label: "No", value: false }] },
+        highlightedIndex: {
+          type: "number",
+          label: "Highlighted index",
+          min: 0,
+          max: 11,
+        },
+        showIndices: {
+          type: "radio",
+          label: "Show indices",
+          options: [
+            { label: "Yes", value: true },
+            { label: "No", value: false },
+          ],
+        },
         caption: { type: "textarea", label: "Caption" },
       },
       defaultProps: {
@@ -622,7 +663,8 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
       },
       defaultProps: {
         title: "Flowchart",
-        chart: "flowchart TD\n  Start[Teacher prompt] --> Decide{Student question?}\n  Decide -->|Yes| Explain[Explain with example]\n  Decide -->|No| Practice[Move to practice]\n  Explain --> Practice",
+        chart:
+          "flowchart TD\n  Start[Teacher prompt] --> Decide{Student question?}\n  Decide -->|Yes| Explain[Explain with example]\n  Decide -->|No| Practice[Move to practice]\n  Explain --> Practice",
         caption: "Use Mermaid to sketch a diagram inside the frame.",
       },
       render: MermaidBlock,

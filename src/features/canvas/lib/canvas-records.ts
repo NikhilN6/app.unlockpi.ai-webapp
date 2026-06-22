@@ -88,6 +88,8 @@ export function mapCanvasRecord(row: CanvasRow): CanvasRecord {
           props: {
             subject: "computer_science",
             title: row.title,
+            theme: "studio",
+            typographyScale: "base",
           },
         },
         content: [],

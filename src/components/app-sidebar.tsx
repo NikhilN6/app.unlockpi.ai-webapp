@@ -1,24 +1,27 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 import {
   CircleHelpIcon,
   FolderIcon,
   LogOutIcon,
   MessageSquareIcon,
+  MoonIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PenLineIcon,
   Settings2Icon,
-} from "lucide-react"
-import type { ComponentType } from "react"
+  Sun,
+} from "lucide-react";
+import type { ComponentType } from "react";
 import { PiChalkboardDuotone } from "react-icons/pi";
+import { useTheme } from "next-themes";
 
-import { createClient } from "@/lib/client"
-import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/client";
+import { cn } from "@/lib/utils";
 import {
   Menu,
   MenuGroup,
@@ -27,7 +30,7 @@ import {
   MenuPopup,
   MenuSeparator,
   MenuTrigger,
-} from "@/components/ui/menu"
+} from "@/components/ui/menu";
 import {
   Sidebar,
   SidebarContent,
@@ -38,19 +41,19 @@ import {
   SidebarMenuItem,
   SidebarRail,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 type MainItem = {
-  title: string
-  url: string
-  icon: ComponentType<{ className?: string }>
-  subtitle?: string
-}
+  title: string;
+  url: string;
+  icon: ComponentType<{ className?: string }>;
+  subtitle?: string;
+};
 
 type SidebarUser = {
-  name: string
-  email: string
-}
+  name: string;
+  email: string;
+};
 
 const topItems: MainItem[] = [
   // {
@@ -61,24 +64,24 @@ const topItems: MainItem[] = [
   {
     title: "Courses",
     url: "/dashboard/courses",
-    icon: PenLineIcon ,
+    icon: PenLineIcon,
   },
   {
     title: "Projects",
     url: "/dashboard/projects",
     icon: FolderIcon,
   },
-]
+];
 
 const quickAction = {
   title: "Canvas",
   url: "/dashboard/canvas",
   icon: PiChalkboardDuotone,
-}
+};
 
 function SidebarCollapseButton() {
-  const { state, toggleSidebar } = useSidebar()
-  const isCollapsed = state === "collapsed"
+  const { state, toggleSidebar } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
     <button
@@ -93,32 +96,34 @@ function SidebarCollapseButton() {
         <PanelLeftCloseIcon className="size-4" />
       )}
     </button>
-  )
+  );
 }
 
 export function AppSidebar({
   currentUser,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  currentUser?: SidebarUser
+  currentUser?: SidebarUser;
 }) {
-  const pathname = usePathname()
-  const { push, replace, refresh } = useRouter()
-  const { state: sidebarState, toggleSidebar, isMobile } = useSidebar()
-  const isSidebarCollapsed = sidebarState === "collapsed"
-  const userInitial = currentUser?.name?.trim().charAt(0).toUpperCase() || "U"
-  const isCanvasActive = pathname === quickAction.url
+  const pathname = usePathname();
+  const { push, replace, refresh } = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
+  const { state: sidebarState, toggleSidebar, isMobile } = useSidebar();
+  const isSidebarCollapsed = sidebarState === "collapsed";
+  const isLightTheme = resolvedTheme === "light";
+  const userInitial = currentUser?.name?.trim().charAt(0).toUpperCase() || "U";
+  const isCanvasActive = pathname === quickAction.url;
 
   const navigateTo = (href: string) => {
-    push(href)
-  }
+    push(href);
+  };
 
   const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    replace("/auth/login")
-    refresh()
-  }
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    replace("/auth/login");
+    refresh();
+  };
 
   return (
     <Sidebar
@@ -126,7 +131,7 @@ export function AppSidebar({
       className={cn(
         "**:data-[slot=sidebar-menu-button]:rounded-xl",
         "**:data-[slot=sidebar-menu-button]:text-sm **:data-[slot=sidebar-menu-button]:font-medium",
-        "[&_[data-slot=sidebar-menu-button][data-active=true]]:bg-accent [&_[data-slot=sidebar-menu-button][data-active=true]]:text-accent-foreground"
+        "[&_[data-slot=sidebar-menu-button][data-active=true]]:bg-accent [&_[data-slot=sidebar-menu-button][data-active=true]]:text-accent-foreground",
       )}
       {...props}
     >
@@ -134,18 +139,18 @@ export function AppSidebar({
         <div
           className={cn(
             "flex items-center gap-2",
-            isSidebarCollapsed ? "justify-center" : "justify-between"
+            isSidebarCollapsed ? "justify-center" : "justify-between",
           )}
         >
           <Link
             href="/dashboard"
             onClick={(event) => {
               if (!isSidebarCollapsed) {
-                return
+                return;
               }
 
-              event.preventDefault()
-              toggleSidebar()
+              event.preventDefault();
+              toggleSidebar();
             }}
             className="group/logo relative flex min-w-0 items-center gap-2 rounded-md"
           >
@@ -189,8 +194,9 @@ export function AppSidebar({
           {topItems.map((item) => {
             const isActive =
               pathname === item.url ||
-              (item.url === "/dashboard/projects" && pathname.startsWith("/dashboard/project/")) ||
-              (item.url !== "/dashboard" && pathname.startsWith(item.url))
+              (item.url === "/dashboard/projects" &&
+                pathname.startsWith("/dashboard/project/")) ||
+              (item.url !== "/dashboard" && pathname.startsWith(item.url));
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -200,7 +206,7 @@ export function AppSidebar({
                   isActive={isActive}
                   className={cn(
                     "h-auto min-h-10 items-start gap-2.5 py-2 group-data-[collapsible=icon]:items-center",
-                    item.subtitle ? "min-h-14" : ""
+                    item.subtitle ? "min-h-14" : "",
                   )}
                 >
                   <item.icon className="mt-0.5 size-4 shrink-0" />
@@ -214,7 +220,7 @@ export function AppSidebar({
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )
+            );
           })}
         </SidebarMenu>
 
@@ -290,6 +296,16 @@ export function AppSidebar({
                     <MessageSquareIcon className="size-4" />
                     Feedback
                   </MenuItem>
+                  <MenuItem
+                    onClick={() => setTheme(isLightTheme ? "dark" : "light")}
+                  >
+                    {isLightTheme ? (
+                      <MoonIcon className="size-4" />
+                    ) : (
+                      <Sun className="size-4" />
+                    )}
+                    {isLightTheme ? "Dark mode" : "Light mode"}
+                  </MenuItem>
                 </MenuPopup>
               </Menu>
             </SidebarMenuItem>
@@ -298,5 +314,5 @@ export function AppSidebar({
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

@@ -24,6 +24,8 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
+  await supabase.rpc("touch_user_activity");
+
   const displayName =
     (typeof user.user_metadata?.full_name === "string" && user.user_metadata.full_name) ||
     (typeof user.user_metadata?.name === "string" && user.user_metadata.name) ||

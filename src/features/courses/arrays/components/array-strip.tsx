@@ -41,7 +41,7 @@ export function ArrayStrip({
     >
       <div className="relative flex items-center gap-4">
         {name ? (
-          <div className="mr-1 grid min-w-16 justify-items-end text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+          <div className="mr-1 grid min-w-16 justify-items-end text-2xl font-semibold tracking-tight text-foreground md:text-2xl">
             <span className="leading-none">{name} =</span>
             {nameHint ? (
               <span className="text-sm font-normal text-muted-foreground">{nameHint}</span>
@@ -81,25 +81,25 @@ export function ArrayStrip({
             </span>
           ) : null}
 
-          <div className="flex gap-4 md:gap-5">
+          <div className="flex gap-2">
             {data.map((item, index) => {
               const isDisabled = disabledElements.includes(index);
               const isActive = activeIndex === index;
 
               return (
-                <div key={`${item}-${index}`} className="grid justify-items-center gap-3">
+                <div key={`${item}-${index}`} className="grid justify-items-center gap-2 ">
                   {showIndex ? (
-                    <span className={cn("text-sm font-medium text-muted-foreground md:text-base", dimIndices && "opacity-35")}>
+                    <span className={cn("text-sm  text-muted-foreground ", dimIndices && "opacity-35")}>
                       {index}
                     </span>
                   ) : null}
 
                   <div
                     className={cn(
-                      "flex h-18 w-18 items-center justify-center rounded-2xl border border-border bg-background text-2xl font-semibold tracking-tight text-foreground shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition md:h-20 md:w-20 md:text-[2rem]",
+                      "flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background text-lg font-semibold tracking-tight text-foreground shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition md:h-12 md:w-12 md:text-xl",
                       isDisabled && "opacity-30",
                       dimElements && "opacity-40",
-                      isActive && "border-primary/50 bg-primary/10 shadow-[0_12px_28px_rgba(220,38,38,0.22)]"
+                      isActive && "border-primary/50 bg-primary text-primary-foreground"
                     )}
                   >
                     {item}
