@@ -6,6 +6,7 @@ interface UseLiveKitRoomConnectionOptions {
   room: string;
   username: string;
   sessionId?: string | null;
+  agentName?: string;
   autoConnect?: boolean;
 }
 
@@ -13,8 +14,10 @@ export function useLiveKitRoomConnection({
   room,
   username,
   sessionId,
+  agentName,
 }: UseLiveKitRoomConnectionOptions) {
   const [token, setToken] = useState("");
+  const [serverUrl, setServerUrl] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agentWarning, setAgentWarning] = useState<string | null>(null);
@@ -24,8 +27,11 @@ export function useLiveKitRoomConnection({
     if (sessionId) {
       searchParams.set("session_id", sessionId);
     }
+    if (agentName) {
+      searchParams.set("agent_name", agentName);
+    }
     return searchParams.toString();
-  }, [room, username, sessionId]);
+  }, [agentName, room, username, sessionId]);
 
   const connect = useCallback(async () => {
     setIsConnecting(true);
@@ -35,6 +41,7 @@ export function useLiveKitRoomConnection({
       const response = await fetch(`/api/token?${queryString}`);
       const data = (await response.json()) as {
         accessToken?: string;
+        serverUrl?: string;
         error?: string;
         agentDispatched?: boolean;
         agentDispatchError?: string;
@@ -53,6 +60,7 @@ export function useLiveKitRoomConnection({
       }
 
       setToken(data.accessToken ?? "");
+      setServerUrl(data.serverUrl ?? "");
       setIsConnecting(false);
     } catch {
       setError("Failed to connect. Is the server running?");
@@ -62,10 +70,11 @@ export function useLiveKitRoomConnection({
 
   const disconnect = useCallback(() => {
     setToken("");
+    setServerUrl("");
     setIsConnecting(false);
     setError(null);
     setAgentWarning(null);
   }, []);
 
-  return { token, isConnecting, error, agentWarning, connect, disconnect };
+  return { token, serverUrl, isConnecting, error, agentWarning, connect, disconnect };
 }

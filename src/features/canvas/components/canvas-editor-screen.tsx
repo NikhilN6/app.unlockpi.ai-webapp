@@ -13,6 +13,7 @@ import { CanvasEditorLeftMicroRail } from "@/features/canvas/components/editor/c
 import { CanvasEditorLeftPanel } from "@/features/canvas/components/editor/canvas-editor-left-panel";
 import { CanvasShareDialog } from "@/features/canvas/components/editor/canvas-share-dialog";
 import { CanvasPresenter } from "@/features/canvas/components/canvas-presenter";
+import { CanvasVoiceRoom } from "@/features/canvas/components/canvas-voice-room";
 import { canvasPuckConfig } from "@/features/canvas/components/canvas-puck-config";
 import {
   canvasPuckOverrides,
@@ -55,7 +56,8 @@ export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
         </div>
       </div>
 
-      <Puck<typeof canvasPuckConfig>
+      <CanvasVoiceRoom canvasId={model.canvas.id}>
+        <Puck<typeof canvasPuckConfig>
         key={`canvas-${controller.puckRevision}`}
         config={canvasPuckConfig}
         data={controller.canvasDocument}
@@ -152,7 +154,8 @@ export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
             />
           </div>
         </div>
-      </Puck>
+        </Puck>
+      </CanvasVoiceRoom>
 
       {/*
         AnimatePresence is what lets CanvasPresenter's `exit` animation

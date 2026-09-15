@@ -5,7 +5,7 @@ import "@excalidraw/excalidraw/index.css";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer, useGetPuck } from "@puckeditor/core";
-import { GripVerticalIcon, PlusIcon } from "lucide-react";
+import { GripVerticalIcon, MicIcon, MicOffIcon, PlusIcon } from "lucide-react";
 
 import {
   Select,
@@ -19,6 +19,11 @@ import {
   sketchWidthOptions,
 } from "@/features/canvas/lib/sketch-sizes";
 import { setPendingSketch } from "@/features/canvas/lib/sketch-transfer";
+import {
+  clearCanvasExcalidrawApi,
+  setCanvasExcalidrawApi,
+  useCanvasVoice,
+} from "@/features/canvas/components/canvas-voice-room";
 import type { FrameSummary } from "@/features/canvas/types/canvas-other-types";
 import type {
   SketchPayload,
@@ -60,6 +65,9 @@ type CanvasSketchPadProps = {
   /** Hidden in the modal, where there is no canvas to drop onto. */
   showDragHandle?: boolean;
   onAdded?: () => void;
+  voiceStatus?: "off" | "connecting" | "listening" | "error";
+  onStartVoice?: () => void;
+  onStopVoice?: () => void;
 };
 
 /** Chunked so very large drawings don't blow the argument limit of fromCharCode. */
@@ -132,7 +140,11 @@ export function CanvasSketchPad({
   frames,
   showDragHandle = true,
   onAdded,
+  voiceStatus = "off",
+  onStartVoice,
+  onStopVoice,
 }: CanvasSketchPadProps) {
+  const canvasVoice = useCanvasVoice();
   const getPuck = useGetPuck();
   const apiRef = useRef<ExcalidrawApi | null>(null);
   const [initialScene] = useState(getInitialScene);
@@ -180,7 +192,18 @@ export function CanvasSketchPad({
   });
 
   const handleExcalidrawApi = useCallback((api: unknown) => {
-    apiRef.current = api as ExcalidrawApi;
+    const excalidrawApi = api as ExcalidrawApi;
+    apiRef.current = excalidrawApi;
+    setCanvasExcalidrawApi(excalidrawApi as never);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (apiRef.current) {
+        clearCanvasExcalidrawApi(apiRef.current as never);
+        apiRef.current = null;
+      }
+    };
   }, []);
 
   const handleChange = useCallback(
@@ -196,6 +219,7 @@ export function CanvasSketchPad({
         },
         files: files as Record<string, unknown>,
       });
+      window.dispatchEvent(new CustomEvent("excalidraw.scene", { detail: elements.filter((element) => !element.isDeleted).map((element) => element as Record<string, unknown>) }));
 
       // Same-value sets bail out in React, so this settles after the first mark.
       setHasContent((elements ?? []).some((element) => !element.isDeleted));
@@ -320,6 +344,21 @@ export function CanvasSketchPad({
       ) : null}
 
       <div className="flex items-center gap-2">
+        {(canvasVoice || (onStartVoice && onStopVoice)) ? (
+          <button
+            type="button"
+            onClick={(canvasVoice?.status ?? voiceStatus) === "off" || (canvasVoice?.status ?? voiceStatus) === "error" ? (canvasVoice?.start ?? onStartVoice) : (canvasVoice?.stop ?? onStopVoice)}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition",
+              (canvasVoice?.status ?? voiceStatus) === "listening"
+                ? "border-success/40 bg-success/10 text-success"
+                : "border-border bg-background text-foreground hover:bg-accent",
+            )}
+          >
+            {(canvasVoice?.status ?? voiceStatus) === "off" || (canvasVoice?.status ?? voiceStatus) === "error" ? <MicIcon className="size-3.5" /> : <MicOffIcon className="size-3.5" />}
+            {(canvasVoice?.status ?? voiceStatus) === "connecting" ? "Connecting…" : (canvasVoice?.status ?? voiceStatus) === "listening" ? "Voice on" : "Start voice"}
+          </button>
+        ) : null}
         <Select
           items={frameItems}
           value={selectedFrameId}
@@ -365,6 +404,15 @@ export function CanvasSketchPad({
           Add
         </button>
       </div>
+      {canvasVoice?.error ? (
+        <p className="text-xs text-destructive">Voice whiteboard: {canvasVoice.error}</p>
+      ) : null}
+      {canvasVoice?.status === "listening" ? (
+        <p aria-live="polite" className="rounded-lg bg-muted/45 px-2.5 py-2 text-xs text-muted-foreground">
+          <span className="mr-1.5 font-semibold text-foreground">Heard:</span>
+          {canvasVoice.caption ?? "Listening…"}
+        </p>
+      ) : null}
 
       <p className="px-1 text-[11px] leading-4 text-muted-foreground">
         Select shapes to take just those, or leave nothing selected to take the

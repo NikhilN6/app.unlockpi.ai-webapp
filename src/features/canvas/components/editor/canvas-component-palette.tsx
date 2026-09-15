@@ -1,6 +1,6 @@
 "use client";
 
-import { Drawer, usePuck } from "@puckeditor/core";
+import { createUsePuck, Drawer } from "@puckeditor/core";
 
 import {
   CanvasDrawerItem,
@@ -8,6 +8,8 @@ import {
 } from "@/features/canvas/components/canvas-puck-overrides";
 import { canvasPuckConfig } from "@/features/canvas/components/canvas-puck-config";
 import { cn } from "@/lib/utils";
+
+const useCanvasPuck = createUsePuck<typeof canvasPuckConfig>();
 
 type CanvasComponentName = keyof typeof canvasPuckConfig.components & string;
 type PaletteLayout = "blocks" | "rows";
@@ -98,7 +100,7 @@ function PaletteDrawerItem({
   layout: PaletteLayout;
   name: CanvasComponentName;
 }) {
-  const { getPermissions } = usePuck<typeof canvasPuckConfig>();
+  const getPermissions = useCanvasPuck((state) => state.getPermissions);
   const canInsert = getPermissions({ type: name }).insert;
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Puck, usePuck } from "@puckeditor/core";
+import { createUsePuck, Puck } from "@puckeditor/core";
 import { ChevronRightIcon } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { canvasPuckConfig } from "@/features/canvas/components/canvas-puck-config";
 import type { CanvasEditorController } from "@/features/canvas/types/canvas-other-types";
+
+const useCanvasPuck = createUsePuck<typeof canvasPuckConfig>();
 
 type CanvasEditorInspectorPanelProps = {
   easyMode: boolean;
@@ -24,7 +26,7 @@ export function CanvasEditorInspectorPanel({
   screenContext,
   show,
 }: CanvasEditorInspectorPanelProps) {
-  const { selectedItem } = usePuck<typeof canvasPuckConfig>();
+  const selectedItem = useCanvasPuck((state) => state.selectedItem);
   const selectedType = selectedItem?.type as
     | keyof typeof canvasPuckConfig.components
     | undefined;

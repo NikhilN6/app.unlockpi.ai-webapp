@@ -14,7 +14,7 @@ import { useEffect, useRef } from "react";
 import type { RpcInvocationData } from "livekit-client";
 
 const DEBUG_RPC = process.env.NEXT_PUBLIC_DEBUG_RPC === "1";
-type RpcHandler = (payload: unknown) => Promise<string | void>;
+type RpcHandler = (payload: unknown) => Promise<unknown>;
 
 function debugRpc(method: string, message: string, payload?: unknown) {
     if (!DEBUG_RPC) return;
