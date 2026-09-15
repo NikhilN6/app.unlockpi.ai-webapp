@@ -79,7 +79,7 @@ function frame(
       id: createCanvasId("slide"),
       title,
       teachingBeat,
-      notes,
+     // notes,
       content,
     },
   };
