@@ -41,7 +41,6 @@ export type SlideBlockProps = {
   frameLabel?: string;
   title: string;
   teachingBeat: "hook" | "explain" | "practice" | "recap";
-  notes: string;
   content: Slot;
 };
 

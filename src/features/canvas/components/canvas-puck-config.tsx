@@ -151,7 +151,6 @@ function SlideBlock({
   id,
   frameLabel,
   title,
-  notes,
   content: Content,
 }: SlideRenderProps) {
   const label = frameLabel ?? "Frame";
@@ -233,10 +232,10 @@ function SlideBlock({
       </div>
       <section
         aria-label={`${label}: ${title}`}
-        title={notes}
-        className="flex min-h-[560px] min-w-0 w-full flex-col gap-5 rounded-lg border border-border bg-background p-4 text-foreground shadow-[0_22px_70px_var(--canvas-shadow-color)] sm:p-5 lg:p-7"
+        title={`${label}: ${title}`}
+        className="relative flex min-h-[560px] min-w-0 w-full flex-col gap-5 rounded-lg border border-border bg-background p-4 text-foreground shadow-[0_22px_70px_var(--canvas-shadow-color)] sm:p-5 lg:p-7"
       >
-        <ScrollArea className=" rounded-md border">
+        <ScrollArea className="min-h-0 flex-1 rounded-md border">
           <Content
             allow={[
               "HeadingTextBlock",
@@ -253,19 +252,19 @@ function SlideBlock({
               "CheckpointBlock",
               "SketchBlock",
             ]}
-            className="grid min-h-[470px] min-w-0 flex-1 content-start gap-4 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 sm:p-4"
+            className="grid min-h-[470px] min-w-0 flex-1 content-start gap-4 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 pb-10 sm:p-4 sm:pb-11"
           />
-          <div className="h-10 flex items-center justify-end gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-            <span>Made with</span>
-            <Logo
-              isLink={false}
-              width={18}
-              height={18}
-              className="rounded-full bg-background/70"
-            />
-            <span>UnlockPi</span>
-          </div>
         </ScrollArea>
+        <div className="pointer-events-none absolute bottom-right-8 z-10 flex items-center gap-1.5 rounded-md bg-background/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70 backdrop-blur-sm lg:bottom-9 lg:right-9">
+          <span>Made with</span>
+          <Logo
+            isLink={false}
+            width={18}
+            height={18}
+            className="rounded-full bg-background/70"
+          />
+          <span>UnlockPi</span>
+        </div>
       </section>{" "}
     </article>
   );
@@ -635,7 +634,11 @@ function SketchContextField({
 
   return (
     <div className="grid gap-2">
+      <p className="text-xs font-semibold text-foreground">
+        Image context for AI
+      </p>
       <Textarea
+        aria-label="Image context for AI"
         value={draft}
         disabled={readOnly}
         onChange={(event) => setDraft(event.target.value)}
@@ -675,7 +678,7 @@ function CheckpointBlock({ question, answer }: CheckpointBlockProps) {
 export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
   root: {
     fields: {
-      title: { type: "text", label: "Canvas title" },
+      title: { type: "text", label: "Canvas name" },
       subject: {
         type: "select",
         label: "Subject",
@@ -683,7 +686,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
       },
       theme: {
         type: "select",
-        label: "Canvas theme",
+        label: "Theme",
         options: canvasThemeOptions.map((theme) => ({
           label: theme.name,
           value: theme.id,
@@ -691,7 +694,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
       },
       typographyScale: {
         type: "select",
-        label: "Typography size",
+        label: "Text size",
         options: canvasTypographyOptions.map((scale) => ({
           label: scale.name,
           value: scale.id,
@@ -699,7 +702,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
       },
       fontFamily: {
         type: "select",
-        label: "Typeface",
+        label: "Font style",
         options: canvasFontFamilyOptions.map((family) => ({
           label: family.name,
           value: family.id,
@@ -736,6 +739,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
       title: "Text",
       components: ["HeadingTextBlock", "SubheadingTextBlock", "BodyTextBlock"],
       defaultExpanded: true,
+      
     },
     blocks: {
       title: "Blocks",
@@ -769,7 +773,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
             { label: "Recap", value: "recap" },
           ],
         },
-        notes: { type: "textarea", label: "Teacher notes" },
+
         content: {
           type: "slot",
           label: "Frame content",
@@ -794,7 +798,6 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
         frameLabel: "Frame",
         title: "New frame",
         teachingBeat: "explain",
-        notes: "Add the teaching move for this frame.",
         content: [],
       },
       render: ({ id, content, ...props }) => (
