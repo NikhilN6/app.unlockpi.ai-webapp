@@ -1,47 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/client";
 import { getSafeRedirectTarget } from "@/lib/safe-redirect";
-import { cn } from "@/lib/utils";
+import LogInForm from "./login-form";
+import SignUpForm from "./signup-form";
+import Typewriter from "@/components/typewriter-text";
+import { AuthFormContainerProps, AuthPageProps } from "../types/auth.types";
+import { getAuthErrorMessage, withAuthTimeout } from "../lib/auth-errors";
 
-type AuthContentProps = {
-  image?: {
-    src: string;
-    alt: string;
-  };
-  quote?: {
-    text: string;
-    author: string;
-  };
-};
-
-type AuthPageProps = {
-  signInContent?: AuthContentProps;
-  signUpContent?: AuthContentProps;
-};
-
-type AuthFormProps = {
-  isSubmitting: boolean;
-  error: string | null;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-};
-
-type AuthFormContainerProps = {
-  isSignIn: boolean;
-  onToggle: () => void;
-  isSubmitting: boolean;
-  error: string | null;
-  onSignIn: (event: React.FormEvent<HTMLFormElement>) => void;
-  onSignUp: (event: React.FormEvent<HTMLFormElement>) => void;
-};
 
 const defaultSignInContent = {
   image: {
@@ -65,254 +34,10 @@ const defaultSignUpContent = {
   },
 };
 
-function Typewriter({
-  text,
-  speed = 100,
-  cursor = "|",
-  loop = false,
-  deleteSpeed = 50,
-  delay = 1500,
-  className,
-}: {
-  text: string | string[];
-  speed?: number;
-  cursor?: string;
-  loop?: boolean;
-  deleteSpeed?: number;
-  delay?: number;
-  className?: string;
-}) {
-  const [displayText, setDisplayText] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [textArrayIndex, setTextArrayIndex] = useState(0);
 
-  const textArray = Array.isArray(text) ? text : [text];
-  const currentText = textArray[textArrayIndex] || "";
 
-  useEffect(() => {
-    if (!currentText) {
-      return;
-    }
 
-    const timeout = setTimeout(
-      () => {
-        if (!isDeleting) {
-          if (currentIndex < currentText.length) {
-            setDisplayText((previous) => previous + currentText[currentIndex]);
-            setCurrentIndex((previous) => previous + 1);
-          } else if (loop) {
-            setTimeout(() => setIsDeleting(true), delay);
-          }
-        } else if (displayText.length > 0) {
-          setDisplayText((previous) => previous.slice(0, -1));
-        } else {
-          setIsDeleting(false);
-          setCurrentIndex(0);
-          setTextArrayIndex((previous) => (previous + 1) % textArray.length);
-        }
-      },
-      isDeleting ? deleteSpeed : speed,
-    );
 
-    return () => clearTimeout(timeout);
-  }, [
-    currentIndex,
-    currentText,
-    delay,
-    deleteSpeed,
-    displayText,
-    isDeleting,
-    loop,
-    speed,
-    textArray.length,
-  ]);
-
-  return (
-    <span className={className}>
-      {displayText}
-      <span className="animate-pulse">{cursor}</span>
-    </span>
-  );
-}
-import { EyeIcon, EyeOffIcon } from "lucide-react";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Tooltip, TooltipPopup, TooltipTrigger } from "@/components/ui/tooltip";
-import Logo from "@/components/logo";
-type PasswordInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  label?: string;
-};
-
-// The coss Input renders a positioned `<span>` wrapper around the actual
-// <input>, so the eye toggle can sit inside that wrapper as a relative
-// sibling. We stack it via the input's own [data-slot=input-control] parent
-// by wrapping in a plain `<div className="relative">` — the coss Input keeps
-// its shell styling; the button just floats on top of the right edge.
-function PasswordInput({ className, label, ...props }: PasswordInputProps) {
-  const id = useId();
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="grid w-full items-center gap-2">
-      {label ? <Label htmlFor={id}>{label}</Label> : null}
-      <InputGroup>
-        <InputGroupInput
-          id={id}
-          type={showPassword ? "text" : "password"}
-          nativeInput
-          aria-label="Password with toggle visibility"
-          placeholder="Enter your password"
-          className={""}
-          {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
-        />
-        <InputGroupAddon align="inline-end">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((previous) => !previous)}
-                  size="icon-xs"
-                  variant="ghost"
-                />
-              }
-            >
-              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-            </TooltipTrigger>
-            <TooltipPopup>
-              {showPassword ? "Hide password" : "Show password"}
-            </TooltipPopup>
-          </Tooltip>
-        </InputGroupAddon>
-      </InputGroup>
-    </div>
-  );
-  return (
-    <div className="grid w-full items-center gap-2">
-      {label ? <Label htmlFor={id}>{label}</Label> : null}
-      <div className="relative">
-        <Input
-          id={id}
-          type={showPassword ? "text" : "password"}
-          nativeInput
-          className={cn("pe-10", className)}
-          {...(props as React.InputHTMLAttributes<HTMLInputElement>)}
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword((previous) => !previous)}
-          aria-label={showPassword ? "Hide password" : "Show password"}
-          className="absolute inset-y-0 end-0 z-10 flex w-10 items-center justify-center text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-        >
-          {showPassword ? (
-            <EyeOff className="size-4" aria-hidden="true" />
-          ) : (
-            <Eye className="size-4" aria-hidden="true" />
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function SignInForm({ isSubmitting, error, onSubmit }: AuthFormProps) {
-  return (
-    <form onSubmit={onSubmit} autoComplete="on" className="flex flex-col gap-8">
-      <div className="flex flex-col items-center gap-2 text-center">
-       <Logo/>
-        <h1 className="text-2xl font-bold">Sign in to your account</h1>
-        <p className="text-balance text-sm text-muted-foreground">
-          Enter your email below to sign in
-        </p>
-      </div>
-
-      <div className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="signin-email">Email</Label>
-          <Input
-            id="signin-email"
-            name="email"
-            type="email"
-            placeholder="m@example.com"
-            required
-            autoComplete="email"
-          />
-        </div>
-
-        <PasswordInput
-          name="password"
-          label="Password"
-          required
-          autoComplete="current-password"
-          placeholder="Password"
-        />
-
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-
-        <Button type="submit" className="mt-2 w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign In"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function SignUpForm({ isSubmitting, error, onSubmit }: AuthFormProps) {
-  return (
-    <form onSubmit={onSubmit} autoComplete="on" className="flex flex-col gap-8">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold">Create an account</h1>
-        <p className="text-balance text-sm text-muted-foreground">
-          Enter your details below to sign up
-        </p>
-      </div>
-
-      <div className="grid gap-4">
-        <div className="grid gap-1">
-          <Label htmlFor="signup-name">Full Name</Label>
-          <Input
-            id="signup-name"
-            name="name"
-            type="text"
-            placeholder="John Doe"
-            required
-            autoComplete="name"
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="signup-email">Email</Label>
-          <Input
-            id="signup-email"
-            name="email"
-            type="email"
-            placeholder="m@example.com"
-            required
-            autoComplete="email"
-          />
-        </div>
-
-        <PasswordInput
-          name="password"
-          label="Password"
-          required
-          autoComplete="new-password"
-          placeholder="Password"
-        />
-
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-
-        <Button type="submit" className="mt-2 w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account..." : "Sign Up"}
-        </Button>
-      </div>
-    </form>
-  );
-}
 
 function AuthFormContainer({
   isSignIn,
@@ -325,7 +50,7 @@ function AuthFormContainer({
   return (
     <div className="mx-auto grid w-[350px] gap-2">
       {isSignIn ? (
-        <SignInForm
+        <LogInForm
           isSubmitting={isSubmitting}
           error={error}
           onSubmit={onSignIn}
@@ -426,7 +151,7 @@ export function AuthPage({
 
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
+    setError(null); // Clear any previous error messages
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -435,10 +160,9 @@ export function AuthPage({
 
     try {
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error: signInError } = await withAuthTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+      );
 
       if (signInError) {
         throw signInError;
@@ -447,9 +171,10 @@ export function AuthPage({
       router.replace(redirectTarget);
     } catch (unknownError) {
       setError(
-        unknownError instanceof Error
-          ? unknownError.message
-          : "Invalid email or password. Please try again.",
+        getAuthErrorMessage(
+          unknownError,
+          "Invalid email or password. Please try again.",
+        ),
       );
       setIsSubmitting(false);
     }
@@ -467,15 +192,17 @@ export function AuthPage({
 
     try {
       const supabase = createClient();
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
+      const { data, error: signUpError } = await withAuthTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+            },
           },
-        },
-      });
+        }),
+      );
 
       if (signUpError) {
         throw signUpError;
@@ -493,9 +220,10 @@ export function AuthPage({
       router.replace(redirectTarget);
     } catch (unknownError) {
       setError(
-        unknownError instanceof Error
-          ? unknownError.message
-          : "Could not create account. Please verify details and try again.",
+        getAuthErrorMessage(
+          unknownError,
+          "Could not create account. Please verify details and try again.",
+        ),
       );
       setIsSubmitting(false);
     }

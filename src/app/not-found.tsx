@@ -14,21 +14,24 @@ import {
 
 export default function NotFound() {
   return (
-    <div className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
-      <Empty>
+    <div className="grid min-h-svh relative place-items-center overflow-hidden bg-background px-6 text-foreground">
+      <div className="absolute -z-0  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ">
+        <p className="text-[13rem] opacity-5 font-extrabold">404</p>
+      </div>
+      <Empty className="z-10 max-w-[420px] text-center">
         <EmptyHeader>
-          <Logo isLink={false} width={40} height={40} className="mb-4" />
-          <EmptyMedia variant="icon">
+          <Logo  width={40} full height={40} textClassName="text-base! ml-1" className="hover:cursor-pointer! flex flex-row! items-center  mb-12" />
+          {/* <EmptyMedia variant="icon">
             <CompassIcon />
-          </EmptyMedia>
+          </EmptyMedia> */}
           <EmptyTitle>Page not found</EmptyTitle>
-          <EmptyDescription>
+          <EmptyDescription className="text-muted-foreground">
             The page you&apos;re looking for doesn&apos;t exist or may have
             moved.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button render={<Link href="/dashboard" />}>
+          <Button className="hover:cursor-pointer!" render={<Link href="/dashboard" />}>
             Back to dashboard
           </Button>
         </EmptyContent>
