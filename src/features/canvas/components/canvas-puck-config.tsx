@@ -678,7 +678,7 @@ function CheckpointBlock({ question, answer }: CheckpointBlockProps) {
 export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
   root: {
     fields: {
-      title: { type: "text", label: "Canvas name" },
+      title: { type: "text", label: "Canvas name", contentEditable: true },
       subject: {
         type: "select",
         label: "Subject",
@@ -761,6 +761,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
   components: {
     SlideBlock: {
       label: "Frame",
+      
       fields: {
         title: { type: "text", label: "Frame title" },
         teachingBeat: {
@@ -807,7 +808,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
     HeadingTextBlock: {
       label: "Heading",
       fields: {
-        text: { type: "text", label: "Heading text" },
+        text: { type: "text", label: "Heading text" , contentEditable: true},
       },
       defaultProps: {
         text: "Heading",
@@ -817,7 +818,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
     SubheadingTextBlock: {
       label: "Subheading",
       fields: {
-        text: { type: "text", label: "Subheading text" },
+        text: { type: "text", label: "Subheading text", contentEditable: true },
       },
       defaultProps: {
         text: "Subheading",
@@ -827,7 +828,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
     BodyTextBlock: {
       label: "Body",
       fields: {
-        text: { type: "textarea", label: "Body text" },
+        text: { type: "textarea", label: "Body text", contentEditable: true },
       },
       defaultProps: {
         text: "Body text",
@@ -837,12 +838,12 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
     ArrayBlock: {
       label: "Array",
       fields: {
-        title: { type: "text", label: "Title" },
+        title: { type: "text", label: "Title", contentEditable: true },
         values: {
           type: "array",
           label: "Array values",
           arrayFields: {
-            value: { type: "text", label: "Value" },
+            value: { type: "text", label: "Value", contentEditable: true },
           },
           defaultItemProps: { value: "0" },
           getItemSummary: (item, index) => `Index ${index}: ${item.value}`,
@@ -867,7 +868,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
             { label: "No", value: false },
           ],
         },
-        caption: { type: "textarea", label: "Caption" },
+        caption: { type: "textarea", label: "Caption", contentEditable: true },
       },
       defaultProps: {
         title: "Array A",
@@ -881,12 +882,12 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
     StackBlock: {
       label: "Stack",
       fields: {
-        title: { type: "text", label: "Title" },
+        title: { type: "text", label: "Title" , contentEditable: true },
         values: {
           type: "array",
           label: "Stack values (bottom to top)",
           arrayFields: {
-            value: { type: "text", label: "Value" },
+            value: { type: "text", label: "Value", contentEditable: true },
           },
           defaultItemProps: { value: "0" },
           getItemSummary: (item, index) => `Position ${index}: ${item.value}`,
@@ -917,7 +918,7 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
           min: 1,
           max: 12,
         },
-        caption: { type: "textarea", label: "Caption" },
+        caption: { type: "textarea", label: "Caption", contentEditable: true },
       },
       defaultProps: {
         title: "Stack A",
@@ -931,12 +932,12 @@ export const canvasPuckConfig: Config<CanvasComponents, CanvasRootProps> = {
     QueueBlock: {
       label: "Queue",
       fields: {
-        title: { type: "text", label: "Title" },
+        title: { type: "text", label: "Title" , contentEditable: true },
         values: {
           type: "array",
           label: "Queue values (front to back)",
           arrayFields: {
-            value: { type: "text", label: "Value" },
+            value: { type: "text", label: "Value", contentEditable: true },
           },
           defaultItemProps: { value: "0" },
           getItemSummary: (item, index) => `Position ${index}: ${item.value}`,
