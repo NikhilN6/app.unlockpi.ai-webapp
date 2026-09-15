@@ -46,7 +46,7 @@ const Logo = ({
 
         {full && (
           <h3 className={cn("font-medium text-2xl", textClassName)}>
-            UnicornSpaceUI
+            UnlockPi
           </h3>
         )}
       </Link>

@@ -166,7 +166,7 @@ export function UserNav({ currentUser }: { currentUser: UserNavUser }) {
             Feedback
           </MenuItem>
           <MenuSeparator />
-          <MenuItem onClick={handleLogout}>
+          <MenuItem onClick={handleLogout} className={"text-destructive"}>
             <LogOutIcon className="size-4" />
             Log out
           </MenuItem>

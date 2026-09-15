@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/empty";
 import { CreateProjectDialog } from "@/features/project/components/create-project-dialog";
 import { ProjectsGrid } from "@/features/project/components/projects-grid";
+import type { TeachingCanvasPreview } from "@/features/project/lib/canvas-preview";
 import type { TeachingProject } from "@/features/project/types/project-types";
 import { createClient } from "@/lib/server";
 import { getSafeRedirectTarget } from "@/lib/safe-redirect";
@@ -40,30 +41,19 @@ export default async function ProjectsPage() {
       .select("id, owner_id, name, description, created_at, updated_at")
       .eq("owner_id", user.id)
       .order("updated_at", { ascending: false }),
+    // NOTE: this pulls each canvas's full `document` JSON just to sketch a
+    // first-frame preview on the projects page. Fine for a prototype grid;
+    // if this ships, swap it for a lighter query (e.g. a stored thumbnail or
+    // a DB view that only returns the first frame) instead of the whole doc.
     supabase
       .from("teaching_canvases")
-      .select("id, project_id")
+      .select("id, project_id, title, updated_at, document")
       .eq("owner_id", user.id)
       .order("updated_at", { ascending: false }),
   ]);
 
   const projects = (projectsRes.data ?? []) as TeachingProject[];
-  const canvases = (canvasesRes.data ?? []) as Array<{
-    id: string;
-    project_id: string | null;
-  }>;
-
-  const canvasCounts = canvases.reduce<Record<string, number>>(
-    (acc, canvas) => {
-      if (!canvas.project_id) {
-        return acc;
-      }
-
-      acc[canvas.project_id] = (acc[canvas.project_id] ?? 0) + 1;
-      return acc;
-    },
-    {},
-  );
+  const canvases = (canvasesRes.data ?? []) as TeachingCanvasPreview[];
 
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-5 py-4 md:px-6 md:pb-6 md:pt-0">
@@ -82,7 +72,7 @@ export default async function ProjectsPage() {
             </p> */}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <CreateProjectDialog />
           {/* <Button
             variant="secondary"
@@ -94,23 +84,21 @@ export default async function ProjectsPage() {
         </div>
       </div>
 
-      {projects.length === 0 ? (
-        <>
-          <Empty className="md:mt-16">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <FolderIcon />
-              </EmptyMedia>
-              <EmptyTitle>No projects yet</EmptyTitle>
-              <EmptyDescription>
-                Create your first project to organize sessions by class, unit,
-                or term.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        </>
+      {projects.length === 0 && canvases.length === 0 ? (
+        <Empty className="md:mt-16">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <FolderIcon />
+            </EmptyMedia>
+            <EmptyTitle>No projects yet</EmptyTitle>
+            <EmptyDescription>
+              Create your first project to organize sessions by class, unit, or
+              term.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
-        <ProjectsGrid projects={projects} canvasCounts={canvasCounts} />
+        <ProjectsGrid projects={projects} canvases={canvases} />
       )}
     </section>
   );

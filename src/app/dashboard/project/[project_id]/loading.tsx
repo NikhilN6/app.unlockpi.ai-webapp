@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProjectDetailLoading() {
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6">
+    <section className="mx-auto w-full max-w-5xl px-4 py-4 md:px-6 md:py-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
