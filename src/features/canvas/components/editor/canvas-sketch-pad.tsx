@@ -57,7 +57,7 @@ type CanvasSketchPadProps = {
   onSceneChange: (scene: SketchSceneData) => void;
   activeFrameId: string | null;
   frames: FrameSummary[];
-  /** Hidden in the modal, where there is no canvas to drop onto. */
+  /** Hidden when drawings are added directly to a selected frame. */
   showDragHandle?: boolean;
   onAdded?: () => void;
 };

@@ -418,13 +418,31 @@ html ::-webkit-scrollbar-track {
 
 .canvas-drawer-card--compact {
   aspect-ratio: 1 / 1;
+  align-content: center;
   align-items: center;
+  container-type: inline-size;
   display: grid;
-  gap: 0.45rem;
+  row-gap: clamp(0.5rem, 4cqw, 0.75rem) !important;
   justify-items: center;
   min-height: 0;
-  padding: 0.9rem 0.7rem;
+  padding: 0.65rem 0.35rem;
   text-align: center;
+}
+
+.canvas-drawer-card--compact > p {
+  margin-top: 0;
+}
+
+/* Keep the artwork proportional when the palette grid gives a card more room. */
+.canvas-drawer-card--compact > div:first-child {
+  border-radius: clamp(0.75rem, 8cqw, 1rem);
+  height: clamp(2.5rem, 30cqw, 5rem);
+  width: clamp(2.5rem, 30cqw, 5rem);
+}
+
+.canvas-drawer-card--compact > div:first-child > svg {
+  height: clamp(1.25rem, 16cqw, 2.5rem);
+  width: clamp(1.25rem, 16cqw, 2.5rem);
 }
 
 .canvas-component-palette

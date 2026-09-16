@@ -217,7 +217,6 @@ function pushIntoActiveSlide(
         frameLabel: "Frame 1",
         title: "Frame 1",
         teachingBeat: "hook",
-        notes: "Set the context for the class.",
         content: [],
       },
     };
@@ -268,7 +267,7 @@ export function applyCanvasAction(
         frameLabel: `Frame ${getSlides(nextDocument).length + 1}`,
         title: action.title?.trim() || `Frame ${getSlides(nextDocument).length + 1}`,
         teachingBeat: "explain",
-        notes: action.notes?.trim() || "Add teaching notes for this frame.",
+        //notes: action.notes?.trim() || "Add teaching notes for this frame.",
         content: [],
       },
     });
@@ -289,7 +288,7 @@ export function applyCanvasAction(
         frameLabel: `Frame ${slides.length + 1}`,
         title: action.title?.trim() || `Frame ${slides.length + 1}`,
         teachingBeat: "explain",
-        notes: action.notes?.trim() || "Add teaching notes for this frame.",
+        //notes: action.notes?.trim() || "Add teaching notes for this frame.",
         content: [],
       },
     });

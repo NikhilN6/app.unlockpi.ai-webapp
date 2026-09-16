@@ -74,9 +74,13 @@ function CanvasPaletteSection({ section }: { section: PaletteSection }) {
         )}
       >
         <Drawer>
-          <div className={cn(
-            section.layout === "blocks" ? "grid grid-cols-3 gap-2.5" : "grid grid-cols-1 gap-2.5"
-          )}>
+          <div
+            className={cn(
+              section.layout === "blocks"
+                ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-2.5"
+                : "grid grid-cols-1 gap-2.5",
+            )}
+          >
             {section.components.map((componentName) => (
               <PaletteDrawerItem
                 key={componentName}
