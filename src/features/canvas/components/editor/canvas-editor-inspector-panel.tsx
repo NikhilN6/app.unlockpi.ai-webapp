@@ -79,16 +79,10 @@ export function CanvasEditorInspectorPanel({
                 <ChevronRightIcon className="size-4" />
               </Button>
             </div>
-            {/*
-              `wrapFields={false}` was stripping Puck's field wrapper — which
-              is the thing that renders the label — so every input showed up
-              bare with no indication of what it edited. The wrapper is
-              already styled by the `fieldLabel` override in
-              canvas-puck-overrides.tsx, so letting it render is all that's
-              needed.
-            */}
+            {/* Labels are provided by the inspector override. Removing Puck's
+                default field padding keeps each label close to its control. */}
             <div className="px-3 py-3">
-              <Puck.Fields />
+              <Puck.Fields wrapFields={false} />
             </div>
           </div>
 

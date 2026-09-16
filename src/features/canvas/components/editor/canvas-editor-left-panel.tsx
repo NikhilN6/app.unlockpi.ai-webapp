@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   BracesIcon,
   CheckIcon,
-  ChevronLeftIcon,
   LayoutGridIcon,
   MaximizeIcon,
   PencilRulerIcon,
@@ -177,20 +176,15 @@ export function CanvasEditorLeftPanel({
                 Open drawing board
               </Button>
 
-              {boardOpen ? (
-                <div className="grid min-h-0 flex-1 place-items-center rounded-xl border border-dashed border-border bg-muted/10 p-4 text-center text-xs text-muted-foreground">
-                  Drawing board is open.
-                </div>
-              ) : (
-                <div className="min-h-0 flex-1">
-                  <CanvasSketchPad
-                    activeFrameId={activeSlideId}
-                    frames={frames}
-                    getInitialScene={actions.getSketchScene}
-                    onSceneChange={actions.setSketchScene}
-                  />
-                </div>
-              )}
+              <div className="min-h-0 flex-1">
+                <CanvasSketchPad
+                  activeFrameId={activeSlideId}
+                  frames={frames}
+                  getInitialScene={actions.getSketchScene}
+                  showDragHandle={false}
+                  onSceneChange={actions.setSketchScene}
+                />
+              </div>
             </div>
           )}
         </div>

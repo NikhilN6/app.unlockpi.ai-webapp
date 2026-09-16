@@ -197,7 +197,7 @@ export function CanvasDrawerItem({
         render={
           <div
             className={cn(
-              " canvas-drawer-card py-0! gap-0! size-20 canvas-drawer-card--default",
+              "canvas-drawer-card h-full w-full min-w-0 gap-0! py-0! canvas-drawer-card--default",
               compact && "canvas-drawer-card--compact",
             )}
             title={meta.description}
@@ -216,7 +216,9 @@ export function CanvasDrawerItem({
           <p
             className={cn(
               "min-w-0 text-sm font-medium text-foreground -mt-1",
-              compact ? "text-center text-xs" : "truncate",
+              compact
+                ? "w-full text-center text-[0.6875rem] leading-tight"
+                : "truncate",
             )}
           >
             {meta.label}
@@ -249,14 +251,19 @@ function getInspectorFieldOptions(
   );
 }
 
-function InspectorTextField({ id, onChange, readOnly, value }: FieldProps) {
+function InspectorTextField(props: FieldProps) {
+  const { id, onChange, readOnly, value } = props;
+
   return (
-    <Input
-      id={id}
-      disabled={readOnly}
-      value={typeof value === "string" ? value : ""}
-      onChange={(event) => onChange(event.target.value)}
-    />
+    <InspectorFieldShell props={props}>
+      <Input
+        id={id}
+        aria-label={getInspectorFieldAccessibleLabel(props)}
+        disabled={readOnly}
+        value={typeof value === "string" ? value : ""}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </InspectorFieldShell>
   );
 }
 
@@ -268,13 +275,30 @@ function getInspectorFieldLabel(field: FieldProps["field"]) {
   return "";
 }
 
-function InspectorTextareaField({
-  field,
-  id,
-  onChange,
-  readOnly,
-  value,
-}: FieldProps) {
+function getInspectorFieldAccessibleLabel({ field, id }: FieldProps) {
+  return getInspectorFieldLabel(field) || id || "Inspector field";
+}
+
+function InspectorFieldShell({
+  children,
+  props,
+}: {
+  children: ReactNode;
+  props: FieldProps;
+}) {
+  return (
+    <CanvasInspectorFieldLabel
+      el="div"
+      label={getInspectorFieldAccessibleLabel(props)}
+      readOnly={props.readOnly}
+    >
+      {children}
+    </CanvasInspectorFieldLabel>
+  );
+}
+
+function InspectorTextareaField(props: FieldProps) {
+  const { field, id, onChange, readOnly, value } = props;
   const fieldLabel = getInspectorFieldLabel(field).toLowerCase();
   const fieldId = (id ?? "").toLowerCase();
   const isCodeEditor =
@@ -287,35 +311,43 @@ function InspectorTextareaField({
     field && "placeholder" in field ? field.placeholder : undefined;
 
   return (
-    <Textarea
-      id={id}
-      disabled={readOnly}
-      value={typeof value === "string" ? value : ""}
-      onChange={(event) => onChange(event.target.value)}
-      placeholder={placeholder}
-      spellCheck={isCodeEditor ? false : undefined}
-      className={cn(
-        "min-h-28",
-        isCodeEditor &&
-          "rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100 shadow-[0_16px_42px_rgba(0,0,0,0.18)] [&_[data-slot=textarea]]:min-h-52 [&_[data-slot=textarea]]:overflow-auto [&_[data-slot=textarea]]:font-mono [&_[data-slot=textarea]]:text-xs [&_[data-slot=textarea]]:leading-6 [&_[data-slot=textarea]]:text-zinc-100 [&_[data-slot=textarea]]:caret-zinc-100 [&_[data-slot=textarea]]:selection:bg-primary/40",
-      )}
-    />
+    <InspectorFieldShell props={props}>
+      <Textarea
+        id={id}
+        aria-label={getInspectorFieldAccessibleLabel(props)}
+        disabled={readOnly}
+        value={typeof value === "string" ? value : ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        spellCheck={isCodeEditor ? false : undefined}
+        className={cn(
+          "min-h-28",
+          isCodeEditor &&
+            "rounded-xl border-zinc-800 bg-zinc-950 text-zinc-100 shadow-[0_16px_42px_rgba(0,0,0,0.18)] [&_[data-slot=textarea]]:min-h-52 [&_[data-slot=textarea]]:overflow-auto [&_[data-slot=textarea]]:font-mono [&_[data-slot=textarea]]:text-xs [&_[data-slot=textarea]]:leading-6 [&_[data-slot=textarea]]:text-zinc-100 [&_[data-slot=textarea]]:caret-zinc-100 [&_[data-slot=textarea]]:selection:bg-primary/40",
+        )}
+      />
+    </InspectorFieldShell>
   );
 }
 
-function InspectorNumberField({ id, onChange, readOnly, value }: FieldProps) {
+function InspectorNumberField(props: FieldProps) {
+  const { id, onChange, readOnly, value } = props;
+
   return (
-    <Input
-      id={id}
-      type="number"
-      disabled={readOnly}
-      value={typeof value === "number" ? String(value) : ""}
-      onChange={(event) =>
-        onChange(
-          event.target.value === "" ? undefined : Number(event.target.value),
-        )
-      }
-    />
+    <InspectorFieldShell props={props}>
+      <Input
+        id={id}
+        aria-label={getInspectorFieldAccessibleLabel(props)}
+        type="number"
+        disabled={readOnly}
+        value={typeof value === "number" ? String(value) : ""}
+        onChange={(event) =>
+          onChange(
+            event.target.value === "" ? undefined : Number(event.target.value),
+          )
+        }
+      />
+    </InspectorFieldShell>
   );
 }
 
@@ -324,31 +356,33 @@ function InspectorSelectField(props: FieldProps) {
   const selectedValue = String(props.value ?? options[0]?.value ?? "");
 
   return (
-    <Select
-      value={selectedValue}
-      disabled={props.readOnly}
-      onValueChange={(nextValue) => {
-        const matchingOption = options.find(
-          (option) => String(option.value) === nextValue,
-        );
+    <InspectorFieldShell props={props}>
+      <Select
+        value={selectedValue}
+        disabled={props.readOnly}
+        onValueChange={(nextValue) => {
+          const matchingOption = options.find(
+            (option) => String(option.value) === nextValue,
+          );
 
-        props.onChange(matchingOption?.value ?? nextValue);
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectPopup>
-        {options.map((option) => (
-          <SelectItem
-            key={`${props.id}-${option.label}`}
-            value={String(option.value)}
-          >
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectPopup>
-    </Select>
+          props.onChange(matchingOption?.value ?? nextValue);
+        }}
+      >
+        <SelectTrigger aria-label={getInspectorFieldAccessibleLabel(props)}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          {options.map((option) => (
+            <SelectItem
+              key={`${props.id}-${option.label}`}
+              value={String(option.value)}
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </Select>
+    </InspectorFieldShell>
   );
 }
 
@@ -357,14 +391,16 @@ function InspectorRadioField(props: FieldProps) {
   const activeValue = String(props.value ?? "");
 
   return (
-    <RadioGroup
-      value={activeValue}
-      className={cn(
-        "grid gap-2",
-        options.length <= 2 ? "sm:grid-cols-2" : "sm:grid-cols-3",
-      )}
-    >
-      {options.map((option) => {
+    <InspectorFieldShell props={props}>
+      <RadioGroup
+        value={activeValue}
+        aria-label={getInspectorFieldAccessibleLabel(props)}
+        className={cn(
+          "grid gap-2",
+          options.length <= 2 ? "sm:grid-cols-2" : "sm:grid-cols-3",
+        )}
+      >
+        {options.map((option) => {
         const optionValue = String(option.value);
         const isActive = optionValue === activeValue;
 
@@ -387,8 +423,9 @@ function InspectorRadioField(props: FieldProps) {
             {isActive ? <CheckIcon className="ml-auto size-3.5" /> : null}
           </Button>
         );
-      })}
-    </RadioGroup>
+        })}
+      </RadioGroup>
+    </InspectorFieldShell>
   );
 }
 
