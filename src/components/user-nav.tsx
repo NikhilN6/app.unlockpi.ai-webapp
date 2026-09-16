@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   BellIcon,
   CircleHelpIcon,
+  DoorOpenIcon,
   LogOutIcon,
   MessageSquareIcon,
   MoonIcon,
@@ -30,7 +31,12 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  ONBOARDING_QUERY_PARAM,
+  ONBOARDING_QUERY_VALUE,
+} from "@/features/onboarding/lib/onboarding-tour";
 import { createClient } from "@/lib/client";
+import { is } from "zod/v4/locales";
 
 export type UserNavUser = {
   avatarUrl?: string | null;
@@ -58,6 +64,8 @@ export function UserNav({ currentUser }: { currentUser: UserNavUser }) {
     setIsMounted(true);
   }, []);
 
+  const [isFeelingStuckPopoverOpen, setIsFeelingStuckPopoverOpen] =
+    useState(false);
   const isLightTheme = isMounted && resolvedTheme === "light";
   const userInitial = currentUser.name?.trim().charAt(0).toUpperCase() || "U";
 
@@ -70,6 +78,36 @@ export function UserNav({ currentUser }: { currentUser: UserNavUser }) {
 
   return (
     <div className="flex items-center gap-2">
+      <Popover onOpenChange={setIsFeelingStuckPopoverOpen} open={isFeelingStuckPopoverOpen}>
+        <PopoverTrigger  onClick={()=> setIsFeelingStuckPopoverOpen(isOpen => !isOpen)}
+          render={<Button aria-label="Notifications" variant="ghost" />}
+        >
+          Feeling stuck?
+          {/* <BellIcon className="size-4" aria-hidden="true" /> */}
+        </PopoverTrigger>
+        <PopoverPopup className="w-72" align="end">
+          <PopoverTitle className="text-xs font-medium">
+            Use this guide to get the most out of UnlockPi
+          </PopoverTitle>
+
+          <div className="mt-4 flex flex-col  gap-2 py-6 text-center">
+            <Button
+              onClick={() => {
+                setIsFeelingStuckPopoverOpen(false);
+              }}
+              render={
+                <Link
+                  href={`/dashboard/projects?${ONBOARDING_QUERY_PARAM}=${ONBOARDING_QUERY_VALUE}`}
+                />
+              }
+              className="hover:cursor-pointer"
+            >
+              <DoorOpenIcon className="size-4" />
+              Take the tour
+            </Button>
+          </div>
+        </PopoverPopup>
+      </Popover>
       <Popover>
         <PopoverTrigger
           render={
@@ -157,6 +195,16 @@ export function UserNav({ currentUser }: { currentUser: UserNavUser }) {
             {isLightTheme ? "Dark mode" : "Light mode"}
           </MenuItem>
           <MenuSeparator />
+          {/* <MenuItem
+            render={
+              <Link
+                href={`/dashboard/projects?${ONBOARDING_QUERY_PARAM}=${ONBOARDING_QUERY_VALUE}`}
+              />
+            }
+          >
+            <DoorOpenIcon className="size-4" />
+            Take the tour
+          </MenuItem> */}
           <MenuItem render={<Link href="/dashboard/help" />}>
             <CircleHelpIcon className="size-4" />
             Help

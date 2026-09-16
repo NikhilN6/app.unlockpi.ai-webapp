@@ -161,7 +161,7 @@ export function CanvasEditorLeftPanel({
 
           {homeTab === "blocks" ? (
             <ScrollArea className="min-h-0 flex-1" scrollFade scrollbarGutter>
-              <div className="p-3">
+              <div id="onboarding-component-palette" className="p-3">
                 <CanvasComponentPalette />
               </div>
             </ScrollArea>

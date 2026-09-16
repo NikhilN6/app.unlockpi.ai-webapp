@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Render } from "@puckeditor/core";
 import {
   BotIcon,
+  DoorOpenIcon,
   MicIcon,
   MoonIcon,
   PanelRightIcon,
@@ -83,6 +85,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Coolshape } from "coolshapes-react";
+import {
+  ONBOARDING_QUERY_PARAM,
+  ONBOARDING_QUERY_VALUE,
+} from "@/features/onboarding/lib/onboarding-tour";
 
 // The two AI modes a class can start in — Manual (no AI) is reachable from
 // inside the presenter itself, so it isn't offered as a starting choice
@@ -118,6 +124,7 @@ export function CanvasEditorHeader({
   isTitleEditing,
   saveStatus,
 }: CanvasEditorHeaderProps) {
+  const router = useRouter();
   const firstFrame = getCanvasPresentationFrames(canvasDocument)[0] ?? null;
 
   const startClass = (mode: CanvasPresentationMode) => {
@@ -390,6 +397,27 @@ export function CanvasEditorHeader({
             <SunIcon className="size-4" />
           )}
         </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                size="icon"
+                variant="outline"
+                aria-label="Take the tour"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/projects?${ONBOARDING_QUERY_PARAM}=${ONBOARDING_QUERY_VALUE}`,
+                  )
+                }
+              />
+            }
+          >
+            <DoorOpenIcon className="size-4" />
+          </TooltipTrigger>
+          <TooltipPopup>
+            <p>Take the tour</p>
+          </TooltipPopup>
+        </Tooltip>
         <Button
           size="icon"
           variant="ghost"

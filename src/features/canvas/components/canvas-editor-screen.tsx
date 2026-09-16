@@ -2,8 +2,10 @@
 
 import "@puckeditor/core/puck.css";
 
+import { useEffect } from "react";
 import { Puck } from "@puckeditor/core";
 import { AnimatePresence } from "motion/react";
+import { useNextStep } from "nextstepjs";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
@@ -19,6 +21,7 @@ import {
   getCanvasAppThemeVars,
 } from "@/features/canvas/components/canvas-puck-overrides";
 import { useCanvasEditorController } from "@/features/canvas/hooks/use-canvas-editor-controller";
+import { ONBOARDING_TOUR_NAME, OnboardingStep } from "@/features/onboarding/lib/onboarding-tour";
 import type { CanvasEditorPageModel } from "@/features/canvas/types/canvas-other-types";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +31,20 @@ type CanvasEditorScreenProps = {
 
 export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
   const controller = useCanvasEditorController(model);
+  const { currentTour, currentStep, setCurrentStep } = useNextStep();
+
+  useEffect(() => {
+    // Opening a canvas is what advances the onboarding tour from "pick a
+    // template" to "drag a block onto it" — a real action, not a tour-card
+    // click. See onboarding-tour.ts.
+    if (
+      currentTour === ONBOARDING_TOUR_NAME &&
+      currentStep === OnboardingStep.FillCanvasDialog
+    ) {
+      setCurrentStep(OnboardingStep.DragBlock, 400);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTour]);
 
   return (
     <section
