@@ -4,7 +4,6 @@ import "@puckeditor/core/puck.css";
 
 import { Puck, useGetPuck } from "@puckeditor/core";
 import { useEffect } from "react";
-import { Puck } from "@puckeditor/core";
 import { AnimatePresence } from "motion/react";
 import { useNextStep } from "nextstepjs";
 
@@ -27,7 +26,6 @@ import type {
   CanvasEditorPageModel,
 } from "@/features/canvas/types/canvas-other-types";
 import { ONBOARDING_TOUR_NAME, OnboardingStep } from "@/features/onboarding/lib/onboarding-tour";
-import type { CanvasEditorPageModel } from "@/features/canvas/types/canvas-other-types";
 import { cn } from "@/lib/utils";
 
 type CanvasEditorScreenProps = {
