@@ -124,7 +124,7 @@ export function ArrayStrip({
   return (
     <div
       className={cn(
-        "relative flex w-full max-w-5xl items-start justify-center pt-4",
+        "canvas-array-strip relative flex w-full max-w-5xl items-start justify-center pt-4",
         className,
       )}
     >
@@ -133,7 +133,7 @@ export function ArrayStrip({
           <motion.div
             layout
             transition={CELL_SPRING}
-            className="mr-1 grid min-w-16 justify-items-end text-2xl font-semibold tracking-tight text-foreground md:text-2xl"
+            className="canvas-array-strip-name mr-1 grid min-w-16 justify-items-end text-2xl font-semibold tracking-tight text-foreground md:text-2xl"
           >
             <span className="leading-none">{name} =</span>
             <AnimatePresence mode="wait">
@@ -224,7 +224,7 @@ export function ArrayStrip({
           <motion.div
             layout
             transition={CELL_SPRING}
-            className="flex gap-2 border-2 px-3 py-2 bg-muted/40 border-dashed border-foreground/25 rounded-2xl"
+            className="canvas-array-strip-plates flex gap-2 border-2 px-3 py-2 bg-muted/40 border-dashed border-foreground/25 rounded-2xl"
           >
             <AnimatePresence initial={false} mode="popLayout">
               {data.map((item, index) => {
@@ -253,7 +253,7 @@ export function ArrayStrip({
                       layout
                       transition={CELL_SPRING}
                       className={cn(
-                        "relative flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-sm border  border-border bg-[#4C4C4C] text-base tracking-tight text-white shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition-colors duration-300 sm:h-14 sm:w-14 sm:text-lg md:h-16 md:w-16 md:text-xl",
+                        "canvas-array-strip-cell relative flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-sm border border-border bg-[#4C4C4C] text-base tracking-tight text-white shadow-[0_10px_24px_rgba(0,0,0,0.24)] transition-colors duration-300 sm:h-14 sm:w-14 sm:text-lg md:h-16 md:w-16 md:text-xl",
                         isTraversalMiss &&
                           "border-border bg-muted/50 text-muted-foreground opacity-40",
                         isTargetHit &&

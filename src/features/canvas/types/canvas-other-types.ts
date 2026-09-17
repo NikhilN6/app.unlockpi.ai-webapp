@@ -125,6 +125,8 @@ export type CanvasEditorController = {
   toolPanelOpen: boolean;
   actions: {
     applyAction: (action: CanvasAiAction) => void;
+    /** Focus a frame in the editor without modifying the canvas document. */
+    goToFrame: (frameId: string) => void;
     /** Normalises the title (trim + fallback) and saves — call on blur/Enter. */
     commitCanvasTitle: () => void;
     copyPublicLink: () => Promise<void>;

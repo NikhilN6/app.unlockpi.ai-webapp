@@ -18,6 +18,10 @@ import {
   DEFAULT_SKETCH_WIDTH_PERCENT,
   sketchWidthOptions,
 } from "@/features/canvas/lib/sketch-sizes";
+import {
+  canAddBlockToFrame,
+  FRAME_CONTENT_LIMIT_MESSAGE,
+} from "@/features/canvas/lib/canvas-commands";
 import { setPendingSketch } from "@/features/canvas/lib/sketch-transfer";
 import type { FrameSummary } from "@/features/canvas/types/canvas-other-types";
 import type {
@@ -25,6 +29,7 @@ import type {
   SketchSceneData,
 } from "@/features/canvas/types/canvas-types";
 import { cn } from "@/lib/utils";
+import { toastManager } from "@/components/ui/toast";
 
 const Excalidraw = dynamic(
   () => import("@excalidraw/excalidraw").then((mod) => mod.Excalidraw),
@@ -232,6 +237,24 @@ export function CanvasSketchPad({
     const frame = puck.getItemById(selectedFrameId) as PuckComponentData | undefined;
 
     if (!frame) {
+      return;
+    }
+
+    if (
+      Array.isArray(frame.props.content) &&
+      !canAddBlockToFrame(
+        frame.props.content as Array<{
+          type: string;
+          props: Record<string, unknown>;
+        }>,
+        { type: "SketchBlock", props: {} },
+      )
+    ) {
+      toastManager.add({
+        title: "Frame has no room",
+        description: FRAME_CONTENT_LIMIT_MESSAGE,
+        type: "error",
+      });
       return;
     }
 

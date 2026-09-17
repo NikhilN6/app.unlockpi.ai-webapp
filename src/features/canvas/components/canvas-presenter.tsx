@@ -23,6 +23,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -34,6 +35,7 @@ import { motion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import Logo from "@/components/logo";
 import { canvasPuckConfig } from "@/features/canvas/components/canvas-puck-config";
 import { CopilotPanel } from "@/features/canvas/components/copilot-panel";
 import { AgentAudioVisualizerWave } from "@/features/talk/components/agent-audio-visualizer-wave";
@@ -73,6 +75,70 @@ type CanvasPresenterProps = {
   title: string;
 };
 
+/** Keeps a busy frame inside the fixed presentation stage without scrolling. */
+function FittedPresentationFrame({ document }: { document: CanvasDocument }) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+
+    let animationFrame = 0;
+    const measure = () => {
+      const viewport = frame.querySelector<HTMLElement>(
+        "[data-slot='scroll-area-viewport']",
+      );
+      const content = frame.querySelector<HTMLElement>(
+        "[data-slot='scroll-area-content']",
+      );
+      if (!viewport || !content) return;
+
+      // scrollHeight/scrollWidth describe the unscaled lesson composition.
+      // Scaling that composition is what lets every element remain visible
+      // without giving the teacher a nested scrollbar.
+      const nextScale = Math.min(
+        1,
+        viewport.clientHeight / content.scrollHeight,
+        viewport.clientWidth / content.scrollWidth,
+      );
+      setScale((current) =>
+        Math.abs(current - nextScale) < 0.01 ? current : nextScale,
+      );
+    };
+    const scheduleMeasure = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(measure);
+    };
+    const observer = new ResizeObserver(scheduleMeasure);
+    observer.observe(frame);
+    scheduleMeasure();
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      observer.disconnect();
+    };
+  }, [document]);
+
+  return (
+    <div
+      ref={frameRef}
+      className="size-full"
+      style={{ overflow: "hidden" }}
+    >
+      <div
+        className="size-full"
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: "top center",
+        }}
+      >
+        <Render config={canvasPuckConfig} data={document} />
+      </div>
+    </div>
+  );
+}
+
 export function CanvasPresenter({
   canvasId,
   document: authoredDocument,
@@ -104,6 +170,13 @@ export function CanvasPresenter({
   const pointerStartRef = useRef<number | null>(null);
   const presenterRef = useRef<HTMLDivElement | null>(null);
   const activeFrame = frames[activeIndex] ?? null;
+  // A frame with several blocks needs a slightly denser presentation scale to
+  // keep every block visible on the fixed 16:9 stage.
+  const activeSlide = activeFrame?.document.content[0];
+  const isDenseFrame =
+    activeSlide?.type === "SlideBlock" &&
+    Array.isArray(activeSlide.props.content) &&
+    activeSlide.props.content.length >= 3;
 
   const goTo = useCallback(
     (nextIndex: number) => {
@@ -554,18 +627,16 @@ export function CanvasPresenter({
           <div
             key={activeFrame.id}
             className={cn(
-              // Fills the whole viewport — no width/height cap. The slide's
-              // own layout (SlideBlock in canvas-puck-config) already caps its
-              // internal content at max-w-5xl and centers it, so the block
-              // stays readable while the outer surface goes edge-to-edge and
-              // aspect ratios inside are unaffected.
-              "canvas-presenter-frame relative z-10 h-full w-full animate-in fade-in duration-300",
+              // This is the presentation surface: it always fits as one 16:9
+              // frame inside the available stage.
+              "canvas-presenter-frame canvas-presenter-surface relative z-10 animate-in fade-in duration-300",
+              isDenseFrame && "canvas-presenter-surface--dense",
               direction === "forward"
                 ? "slide-in-from-right-8"
                 : "slide-in-from-left-8",
             )}
           >
-            <Render config={canvasPuckConfig} data={activeFrame.document} />
+            <FittedPresentationFrame document={activeFrame.document} />
           </div>
 
           <FrameArrow
@@ -587,6 +658,19 @@ export function CanvasPresenter({
             onRemove={panel.remove}
           />
         ) : null}
+      </div>
+
+      {/* Outside Puck's animated render tree so it stays in the actual
+          presentation corner, rather than the bottom of a content block. */}
+      <div className="canvas-presentation-watermark pointer-events-none absolute bottom-6 right-6 z-20 flex items-center gap-1.5 rounded-md bg-background/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70 backdrop-blur-sm">
+        <span>Made with</span>
+        <Logo
+          isLink={false}
+          width={18}
+          height={18}
+          className="rounded-full bg-background/70"
+        />
+        <span>UnlockPi</span>
       </div>
 
       <footer
