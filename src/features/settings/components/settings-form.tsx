@@ -2,41 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  CameraIcon,
-  MoonIcon,
-  SunIcon,
-  Volume2Icon,
-  VolumeXIcon,
-} from "lucide-react";
+import { CameraIcon, MoonIcon, SunIcon, Volume2Icon, VolumeXIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { play, setEnabled } from "cuelume";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { CircleAlertIcon } from "lucide-react";
-import {
-  Card,
-  CardFrame,
-  CardFrameDescription,
-  CardFrameFooter,
-  CardFrameHeader,
-  CardFrameTitle,
-  CardPanel,
-} from "@/components/ui/card";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Form } from "@/components/ui/form";
-import {
-  Select,
-  SelectItem,
-  SelectPopup,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toastManager } from "@/components/ui/toast";
+import { SettingsSection } from "@/features/settings/components/settings-section";
 import { createClient } from "@/lib/client";
 import {
   readSoundPreference,
@@ -155,151 +131,114 @@ export function SettingsForm({
   };
 
   return (
-    <div className="grid gap-4">
-      <CardFrame className="w-full max-w-2xl">
-        <CardFrameHeader>
-          <CardFrameTitle>Account</CardFrameTitle>
-          <CardFrameDescription>
-            Your profile as it appears across UnlockPi.
-          </CardFrameDescription>
-        </CardFrameHeader>
-        <Card className="rounded-b-none!">
-          <CardPanel className="grid gap-6">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Avatar className="size-16 text-lg">
-                  <AvatarImage src={avatarUrl ?? undefined} alt={displayName} />
-                  <AvatarFallback>
-                    {displayName.slice(0, 1).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  size="icon-xs"
-                  variant="outline"
-                  className="absolute -bottom-1 -right-1 rounded-full"
-                  aria-label="Change avatar"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <CameraIcon className="size-3.5" />
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {isUploading ? "Uploading..." : "PNG or JPG, up to 2MB."}
-              </p>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="settings-display-name">Display name</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="settings-display-name"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                />
-                <Button
-                  onClick={handleSaveName}
-                  disabled={
-                    isSavingName || displayName.trim() === initialDisplayName
-                  }
-                >
-                  {isSavingName ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="settings-email">Email</Label>
-              <Input id="settings-email" disabled type="email" value={email} readOnly />
-            </div>
-          </CardPanel>
-        </Card>
-        {/* <CardFrameFooter>
-          <div className="flex gap-1 text-muted-foreground text-xs">
-            <CircleAlertIcon className="size-3 h-lh shrink-0" />
-            <p>This will take a few seconds to complete.</p>
+    <>
+      <SettingsSection
+        id="account"
+        title="Account"
+        description="Your profile as it appears across UnlockPi."
+      >
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Avatar className="size-16 text-lg">
+              <AvatarImage src={avatarUrl ?? undefined} alt={displayName} />
+              <AvatarFallback>
+                {displayName.slice(0, 1).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <Button
+              size="icon-xs"
+              variant="outline"
+              className="absolute -bottom-1 -right-1 rounded-full"
+              aria-label="Change avatar"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <CameraIcon className="size-3.5" />
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
-        </CardFrameFooter> */}
-      </CardFrame>
+          <p className="text-sm text-muted-foreground">
+            {isUploading ? "Uploading..." : "PNG or JPG, up to 2MB."}
+          </p>
+        </div>
 
-      <CardFrame className="w-full max-w-2xl">
-        <CardFrameHeader>
-          <CardFrameTitle>Appearance</CardFrameTitle>
-          <CardFrameDescription>
-            How UnlockPi looks on this device.
-          </CardFrameDescription>
-        </CardFrameHeader>
-        <Card className="rounded-b-none!">
-          <CardPanel>
-            {" "}
-            <Label className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">
-              <span className="flex items-center gap-2 text-sm font-medium">
-                {isDarkTheme ? (
-                  <MoonIcon className="size-4" />
-                ) : (
-                  <SunIcon className="size-4" />
-                )}
-                Dark mode
-              </span>
-              <Switch
-                checked={isDarkTheme}
-                onCheckedChange={(checked) =>
-                  setTheme(checked ? "dark" : "light")
-                }
-              />
-            </Label>
-          </CardPanel>
-        </Card>
-        {/* <CardFrameFooter>
-          <div className="flex gap-1 text-muted-foreground text-xs">
-            <CircleAlertIcon className="size-3 h-lh shrink-0" />
-            <p>This will take a few seconds to complete.</p>
+        <div className="grid gap-2">
+          <Label htmlFor="settings-display-name">Display name</Label>
+          <div className="flex gap-2">
+            <Input
+              id="settings-display-name"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+            />
+            <Button
+              onClick={handleSaveName}
+              disabled={isSavingName || displayName.trim() === initialDisplayName}
+            >
+              {isSavingName ? "Saving..." : "Save"}
+            </Button>
           </div>
-        </CardFrameFooter> */}
-      </CardFrame>
+        </div>
 
-      <CardFrame className="w-full max-w-2xl">
-        <CardFrameHeader>
-          <CardFrameTitle>Preferences</CardFrameTitle>
-          <CardFrameDescription>
-            How UnlockPi behaves on this device.
-          </CardFrameDescription>
-        </CardFrameHeader>
-        <Card className="rounded-b-none!">
-          <CardPanel>
-            <Label className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">
-              <span className="grid gap-0.5">
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  {soundEnabled ? (
-                    <Volume2Icon className="size-4" />
-                  ) : (
-                    <VolumeXIcon className="size-4" />
-                  )}
-                  Interaction sounds
-                </span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  Short cues when arrays and stacks change — including when
-                  the AI changes them during a class.
-                </span>
-              </span>
-              <Switch
-                checked={soundEnabled}
-                aria-label="Toggle interaction sounds"
-                onCheckedChange={(checked) =>
-                  handleSoundChange(Boolean(checked))
-                }
-              />
-            </Label>
-          </CardPanel>
-        </Card>
-      </CardFrame>
-    </div>
+        <div className="grid gap-2">
+          <Label htmlFor="settings-email">Email</Label>
+          <Input id="settings-email" disabled type="email" value={email} readOnly />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        id="appearance"
+        title="Appearance"
+        description="How UnlockPi looks on this device."
+      >
+        <Label className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">
+          <span className="flex items-center gap-2 text-sm font-medium">
+            {isDarkTheme ? (
+              <MoonIcon className="size-4" />
+            ) : (
+              <SunIcon className="size-4" />
+            )}
+            Dark mode
+          </span>
+          <Switch
+            checked={isDarkTheme}
+            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+          />
+        </Label>
+      </SettingsSection>
+
+      <SettingsSection
+        id="preferences"
+        title="Preferences"
+        description="How UnlockPi behaves on this device."
+      >
+        <Label className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">
+          <span className="grid gap-0.5">
+            <span className="flex items-center gap-2 text-sm font-medium">
+              {soundEnabled ? (
+                <Volume2Icon className="size-4" />
+              ) : (
+                <VolumeXIcon className="size-4" />
+              )}
+              Interaction sounds
+            </span>
+            <span className="text-xs font-normal text-muted-foreground">
+              Short cues when arrays and stacks change — including when the AI
+              changes them during a class.
+            </span>
+          </span>
+          <Switch
+            checked={soundEnabled}
+            aria-label="Toggle interaction sounds"
+            onCheckedChange={(checked) => handleSoundChange(Boolean(checked))}
+          />
+        </Label>
+      </SettingsSection>
+    </>
   );
 }

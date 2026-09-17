@@ -1,9 +1,10 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { PlusIcon } from "lucide-react"
+import { useNextStep } from "nextstepjs"
 
 import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ONBOARDING_TOUR_NAME, OnboardingStep } from "@/features/onboarding/lib/onboarding-tour"
 
 export function CreateProjectDialog() {
   const router = useRouter()
@@ -26,6 +28,21 @@ export function CreateProjectDialog() {
   const [projectDescription, setProjectDescription] = useState("")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const { currentTour, currentStep, setCurrentStep } = useNextStep()
+
+  useEffect(() => {
+    // Opening this dialog is the real action that advances the onboarding
+    // tour from "click New project" to "fill in the name" — not a click on
+    // the tour card itself. See onboarding-tour.ts.
+    if (
+      isOpen &&
+      currentTour === ONBOARDING_TOUR_NAME &&
+      currentStep === OnboardingStep.ClickNewProject
+    ) {
+      setCurrentStep(OnboardingStep.FillProjectDialog, 150)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, currentTour])
 
   const resetForm = () => {
     setProjectName("")
@@ -82,7 +99,11 @@ export function CreateProjectDialog() {
 
   return (
     <>
-      <Button onClick={() => setIsOpen(true)} className="gap-2">
+      <Button
+        id="onboarding-new-project"
+        onClick={() => setIsOpen(true)}
+        className="gap-2"
+      >
         <PlusIcon className="size-4" />
         New project
       </Button>
@@ -106,7 +127,7 @@ export function CreateProjectDialog() {
             </DialogHeader>
 
             <div className="grid gap-4 px-6">
-              <div className="grid gap-2">
+              <div id="onboarding-project-name" className="grid gap-2">
                 <Label htmlFor="project-name">Project name</Label>
                 <Input
                   id="project-name"

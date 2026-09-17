@@ -65,6 +65,7 @@ type CanvasEditorLeftPanelProps = {
   actions: Pick<
     CanvasEditorController["actions"],
     | "applyAction"
+    | "goToFrame"
     | "getSketchScene"
     | "runJsonCommand"
     | "setCommandDraft"
@@ -160,7 +161,7 @@ export function CanvasEditorLeftPanel({
 
           {homeTab === "blocks" ? (
             <ScrollArea className="min-h-0 flex-1" scrollFade scrollbarGutter>
-              <div className="p-3">
+              <div id="onboarding-component-palette" className="p-3">
                 <CanvasComponentPalette />
               </div>
             </ScrollArea>
@@ -215,12 +216,7 @@ export function CanvasEditorLeftPanel({
                     <button
                       key={frame.id}
                       type="button"
-                      onClick={() =>
-                        actions.applyAction({
-                          action: "go_to_frame",
-                          frameIndex: index,
-                        })
-                      }
+                      onClick={() => actions.goToFrame(frame.id)}
                       className={cn(
                         "group grid gap-1.5 rounded-lg border p-1.5 text-left transition hover:bg-accent",
                         activeSlideId === frame.id

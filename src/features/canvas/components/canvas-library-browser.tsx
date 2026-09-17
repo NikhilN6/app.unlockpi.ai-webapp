@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, type Variants } from "motion/react";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useNextStep } from "nextstepjs";
 import {
   ArrowLeftIcon,
   BriefcaseBusinessIcon,
@@ -80,6 +81,7 @@ import type {
 } from "@/features/canvas/types/canvas-other-types";
 import type { CanvasTemplateKey } from "@/features/canvas/types/canvas-types";
 import { useMediaQuery } from "@/features/talk/hooks/use-media-query";
+import { ONBOARDING_TOUR_NAME, OnboardingStep } from "@/features/onboarding/lib/onboarding-tour";
 import { createClient as createSupabaseClient } from "@/lib/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -284,6 +286,39 @@ export function CanvasLibraryBrowser({
   const [canvasRecords, setCanvasRecords] =
     useState<CanvasSummary[]>(initialCanvases);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const { currentTour, currentStep, setCurrentStep } = useNextStep();
+
+  useEffect(() => {
+    // Landing here (a project's own canvas page) right after the onboarding
+    // tour's "fill in the project dialog" step is what advances it — a real
+    // action, not a click on the tour card itself. See onboarding-tour.ts.
+    if (
+      projectContext &&
+      currentTour === ONBOARDING_TOUR_NAME &&
+      currentStep === OnboardingStep.FillProjectDialog
+    ) {
+      setCurrentStep(OnboardingStep.ClickNewCanvas, 400);
+    }
+    // Intentionally only reacting to the tour reaching this page, not to
+    // every render — re-running on currentStep changes elsewhere would fight
+    // with the tour's own navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectContext, currentTour]);
+
+  useEffect(() => {
+    // Opening the create-canvas dialog is the real action that advances the
+    // tour from "click New canvas" to "pick a template" — same pattern as
+    // the project dialog above.
+    if (
+      isTemplateDialogOpen &&
+      currentTour === ONBOARDING_TOUR_NAME &&
+      currentStep === OnboardingStep.ClickNewCanvas
+    ) {
+      setCurrentStep(OnboardingStep.FillCanvasDialog, 150);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTemplateDialogOpen, currentTour]);
+
   const [topicSearch, setTopicSearch] = useState("");
   const [selectedTemplateKey, setSelectedTemplateKey] =
     useState<CanvasTemplateKey>("array-intro");
@@ -580,6 +615,7 @@ export function CanvasLibraryBrowser({
           <CardFrameTitle>Existing canvases</CardFrameTitle>
           <CardFrameAction>
             <Button
+              id="onboarding-new-canvas"
               variant="default"
               onClick={() => setIsTemplateDialogOpen(true)}
             >

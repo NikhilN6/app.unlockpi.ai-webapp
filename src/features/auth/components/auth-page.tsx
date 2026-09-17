@@ -10,6 +10,10 @@ import SignUpForm from "./signup-form";
 import Typewriter from "@/components/typewriter-text";
 import { AuthFormContainerProps, AuthPageProps } from "../types/auth.types";
 import { getAuthErrorMessage, withAuthTimeout } from "../lib/auth-errors";
+import {
+  ONBOARDING_QUERY_PARAM,
+  ONBOARDING_QUERY_VALUE,
+} from "@/features/onboarding/lib/onboarding-tour";
 
 
 const defaultSignInContent = {
@@ -111,6 +115,16 @@ export function AuthPage({
     searchParams.get("redirectTo"),
     "/dashboard",
   );
+  // A brand-new account with nowhere specific to be (no explicit
+  // `redirectTo`, e.g. an invite link) lands on Projects with the
+  // onboarding tour armed, rather than the generic dashboard home. An
+  // explicit redirect is still honored — the tour just tags along.
+  const signUpDestination = searchParams.get("redirectTo")
+    ? redirectTarget
+    : "/dashboard/projects";
+  const signUpDestinationWithTour = `${signUpDestination}${
+    signUpDestination.includes("?") ? "&" : "?"
+  }${ONBOARDING_QUERY_PARAM}=${ONBOARDING_QUERY_VALUE}`;
 
   useEffect(() => {
     let isMounted = true;
@@ -217,7 +231,7 @@ export function AuthPage({
         return;
       }
 
-      router.replace(redirectTarget);
+      router.replace(signUpDestinationWithTour);
     } catch (unknownError) {
       setError(
         getAuthErrorMessage(

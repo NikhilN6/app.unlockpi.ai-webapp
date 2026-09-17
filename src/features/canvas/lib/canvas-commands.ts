@@ -18,6 +18,7 @@ import { createCanvasId } from "@/features/canvas/lib/canvas-templates";
 const DEFAULT_STACK_SIZE = 5;
 
 type CanvasItem = CanvasDocument["content"][number];
+type FrameContentItem = { type: string; props: Record<string, unknown> };
 type SlideItem = CanvasItem & {
   type: "SlideBlock";
   props: SlideBlockProps & { id: string; content: CanvasItem[] };
@@ -65,6 +66,118 @@ function stackCapacityOf(stack: StackItem): StackCapacity {
 
 function getSlides(document: CanvasDocument) {
   return document.content.filter(isSlideItem);
+}
+
+/**
+ * Layout units for a 16:9 frame. Text uses its actual length, while visual
+ * blocks reserve the height their default rendering needs. This deliberately
+ * is not a component count: a heading, subheading, and short body leave room
+ * for more material, whereas a table or diagram consumes more of the frame.
+ */
+const FRAME_CONTENT_BUDGET = 8;
+export const FRAME_CONTENT_LIMIT_MESSAGE =
+  "This content would not fit in the 16:9 frame at its default size. Add a new frame to keep everything visible.";
+
+function textLines(value: unknown, charactersPerLine: number) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return Math.max(1, Math.ceil(text.length / charactersPerLine));
+}
+
+function itemLayoutCost(item: FrameContentItem) {
+  const props = item.props;
+
+  switch (item.type) {
+    case "HeadingTextBlock":
+      return 0.6 + textLines(props.text, 28) * 0.35;
+    case "SubheadingTextBlock":
+      return 0.45 + textLines(props.text, 42) * 0.25;
+    case "BodyTextBlock":
+      return 0.35 + textLines(props.text, 100) * 0.35;
+    case "CheckpointBlock":
+      return (
+        1.25 +
+        textLines(props.question, 65) * 0.3 +
+        textLines(props.answer, 90) * 0.3
+      );
+    case "CodeBlock":
+      return 1.3 + textLines(props.code, 55) * 0.32;
+    case "TableBlock": {
+      const rows = Array.isArray(props.rows) ? props.rows.length : 0;
+      return 1.5 + Math.max(1, rows) * 0.55;
+    }
+    case "StackBlock": {
+      const values = Array.isArray(props.values) ? props.values.length : 0;
+      return 1.9 + Math.max(1, values) * 0.35;
+    }
+    case "ArrayBlock":
+    case "QueueBlock":
+    case "LinkedListBlock": {
+      // Optional title/caption rows consume real vertical space. Once the
+      // teacher removes them, the visual can move up and leaves more room for
+      // the rest of the frame.
+      const titleCost = typeof props.title === "string" && props.title.trim() ? 0.45 : 0;
+      const captionCost =
+        typeof props.caption === "string" && props.caption.trim() ? 0.35 : 0;
+      return 1.9 + titleCost + captionCost;
+    }
+    case "MindMapBlock":
+    case "MermaidBlock":
+    case "SketchBlock":
+      return 3.5;
+    default:
+      return 2;
+  }
+}
+
+export function getFrameContentUsage(
+  document: CanvasDocument,
+  frameId: string | null,
+) {
+  const frame = getSlides(document).find((slide) => slide.props.id === frameId);
+  const used = frame
+    ? getSlideContent(frame).reduce(
+        (total, item) => total + itemLayoutCost(item as FrameContentItem),
+        0,
+      )
+    : 0;
+  const percent = Math.min(100, Math.round((used / FRAME_CONTENT_BUDGET) * 100));
+
+  return { isFull: used >= FRAME_CONTENT_BUDGET, percent, used };
+}
+
+export function canAddBlockToFrame(
+  content: readonly FrameContentItem[],
+  item: FrameContentItem,
+) {
+  return (
+    [...content, item].reduce((total, next) => total + itemLayoutCost(next), 0) <=
+    FRAME_CONTENT_BUDGET
+  );
+}
+
+/** True only when a change makes a frame exceed its content-based capacity. */
+export function addsContentPastFrameCapacity(
+  previousDocument: CanvasDocument,
+  nextDocument: CanvasDocument,
+) {
+  const previousCosts = new Map(
+    getSlides(previousDocument).map((slide) => [
+      slide.props.id,
+      getSlideContent(slide).reduce(
+        (total, item) => total + itemLayoutCost(item as FrameContentItem),
+        0,
+      ),
+    ]),
+  );
+
+  return getSlides(nextDocument).some((slide) => {
+    const nextCost = getSlideContent(slide).reduce(
+      (total, item) => total + itemLayoutCost(item as FrameContentItem),
+      0,
+    );
+    const previousCost = previousCosts.get(slide.props.id) ?? 0;
+    return nextCost > FRAME_CONTENT_BUDGET && nextCost > previousCost;
+  });
 }
 
 export function normalizeCanvasFrames(document: CanvasDocument): CanvasDocument {
@@ -202,11 +315,13 @@ function createHeadingTextItem(text: string): CanvasItem {
   };
 }
 
+type FrameInsertResult = { inserted: boolean; slideId: string };
+
 function pushIntoActiveSlide(
   document: CanvasDocument,
   activeSlideId: string | null,
   item: CanvasItem
-) {
+): FrameInsertResult {
   let slide = getActiveSlide(document, activeSlideId);
 
   if (!slide) {
@@ -223,9 +338,14 @@ function pushIntoActiveSlide(
     document.content.push(slide);
   }
 
-  slide.props.content = [...getSlideContent(slide), item];
+  const content = getSlideContent(slide);
+  if (!canAddBlockToFrame(content as FrameContentItem[], item as FrameContentItem)) {
+    return { inserted: false, slideId: slide.props.id };
+  }
 
-  return slide.props.id;
+  slide.props.content = [...content, item];
+
+  return { inserted: true, slideId: slide.props.id };
 }
 
 export function getInitialSlideId(document: CanvasDocument): string | null {
@@ -358,16 +478,17 @@ export function applyCanvasAction(
   }
 
   if (action.action === "add_text_block") {
-    nextSlideId = pushIntoActiveSlide(
+    const result = pushIntoActiveSlide(
       nextDocument,
       nextSlideId,
       createHeadingTextItem(action.heading?.trim() || action.body?.trim() || "New heading")
     );
-    message = "Added a heading block to the active frame.";
+    nextSlideId = result.slideId;
+    message = result.inserted ? "Added a heading block to the active frame." : FRAME_CONTENT_LIMIT_MESSAGE;
   }
 
   if (action.action === "add_array_block") {
-    nextSlideId = pushIntoActiveSlide(nextDocument, nextSlideId, {
+    const result = pushIntoActiveSlide(nextDocument, nextSlideId, {
       type: "ArrayBlock",
       props: {
         id: createCanvasId("array"),
@@ -378,7 +499,8 @@ export function applyCanvasAction(
         caption: "Use voice or the fields panel to change this array during class.",
       },
     });
-    message = "Added an editable array block to the active frame.";
+    nextSlideId = result.slideId;
+    message = result.inserted ? "Added an editable array block to the active frame." : FRAME_CONTENT_LIMIT_MESSAGE;
   }
 
   if (action.action === "set_array_values") {
@@ -474,8 +596,11 @@ export function applyCanvasAction(
           String(duplicate.props.values.length);
         duplicate.props.values = [...duplicate.props.values, { value }];
       }
-      nextSlideId = pushIntoActiveSlide(nextDocument, nextSlideId, duplicate);
-      message = `Duplicated ${source.props.title} as ${duplicate.props.title}.`;
+      const result = pushIntoActiveSlide(nextDocument, nextSlideId, duplicate);
+      nextSlideId = result.slideId;
+      message = result.inserted
+        ? `Duplicated ${source.props.title} as ${duplicate.props.title}.`
+        : FRAME_CONTENT_LIMIT_MESSAGE;
     } else {
       message = "Could not find an array block to duplicate.";
     }
@@ -484,7 +609,7 @@ export function applyCanvasAction(
   if (action.action === "add_stack_block") {
     const isFixed = Boolean(action.isFixed);
     const stackSize = action.stackSize ?? DEFAULT_STACK_SIZE;
-    nextSlideId = pushIntoActiveSlide(nextDocument, nextSlideId, {
+    const result = pushIntoActiveSlide(nextDocument, nextSlideId, {
       type: "StackBlock",
       props: {
         id: createCanvasId("stack"),
@@ -503,7 +628,8 @@ export function applyCanvasAction(
         stackSize: isFixed ? stackSize : undefined,
       },
     });
-    message = "Added a stack block to the active frame.";
+    nextSlideId = result.slideId;
+    message = result.inserted ? "Added a stack block to the active frame." : FRAME_CONTENT_LIMIT_MESSAGE;
   }
 
   if (action.action === "push_stack_value") {
@@ -548,7 +674,7 @@ export function applyCanvasAction(
   }
 
   if (action.action === "add_queue_block") {
-    nextSlideId = pushIntoActiveSlide(nextDocument, nextSlideId, {
+    const result = pushIntoActiveSlide(nextDocument, nextSlideId, {
       type: "QueueBlock",
       props: {
         id: createCanvasId("queue"),
@@ -558,11 +684,12 @@ export function applyCanvasAction(
         caption: "Enqueue adds to the back; dequeue removes from the front.",
       },
     });
-    message = "Added a queue block to the active frame.";
+    nextSlideId = result.slideId;
+    message = result.inserted ? "Added a queue block to the active frame." : FRAME_CONTENT_LIMIT_MESSAGE;
   }
 
   if (action.action === "add_linked_list_block") {
-    nextSlideId = pushIntoActiveSlide(nextDocument, nextSlideId, {
+    const result = pushIntoActiveSlide(nextDocument, nextSlideId, {
       type: "LinkedListBlock",
       props: {
         id: createCanvasId("list"),
@@ -571,11 +698,12 @@ export function applyCanvasAction(
         caption: "Each node stores a value and a pointer to the next node.",
       },
     });
-    message = "Added a linked list block to the active frame.";
+    nextSlideId = result.slideId;
+    message = result.inserted ? "Added a linked list block to the active frame." : FRAME_CONTENT_LIMIT_MESSAGE;
   }
 
   if (action.action === "add_checkpoint") {
-    nextSlideId = pushIntoActiveSlide(nextDocument, nextSlideId, {
+    const result = pushIntoActiveSlide(nextDocument, nextSlideId, {
       type: "CheckpointBlock",
       props: {
         id: createCanvasId("checkpoint"),
@@ -583,7 +711,8 @@ export function applyCanvasAction(
         answer: action.answer?.trim() || "Add the expected answer.",
       },
     });
-    message = "Added a checkpoint block to the active frame.";
+    nextSlideId = result.slideId;
+    message = result.inserted ? "Added a checkpoint block to the active frame." : FRAME_CONTENT_LIMIT_MESSAGE;
   }
 
   return {

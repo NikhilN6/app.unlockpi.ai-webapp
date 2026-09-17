@@ -2,8 +2,10 @@
 
 import "@puckeditor/core/puck.css";
 
-import { Puck } from "@puckeditor/core";
+import { Puck, useGetPuck } from "@puckeditor/core";
+import { useEffect } from "react";
 import { AnimatePresence } from "motion/react";
+import { useNextStep } from "nextstepjs";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
@@ -19,15 +21,111 @@ import {
   getCanvasAppThemeVars,
 } from "@/features/canvas/components/canvas-puck-overrides";
 import { useCanvasEditorController } from "@/features/canvas/hooks/use-canvas-editor-controller";
-import type { CanvasEditorPageModel } from "@/features/canvas/types/canvas-other-types";
+import type {
+  CanvasEditorController,
+  CanvasEditorPageModel,
+} from "@/features/canvas/types/canvas-other-types";
+import { ONBOARDING_TOUR_NAME, OnboardingStep } from "@/features/onboarding/lib/onboarding-tour";
 import { cn } from "@/lib/utils";
 
 type CanvasEditorScreenProps = {
   model: CanvasEditorPageModel;
 };
 
+function CanvasEditorStage({ controller }: { controller: CanvasEditorController }) {
+  const getPuck = useGetPuck();
+
+  const updateBlockCopy = (element: HTMLElement, value: string) => {
+    const field =
+      element.dataset.canvasRemoveBlockCopy ??
+      element.dataset.canvasEditBlockCopy;
+    if (field !== "title" && field !== "caption") return;
+    const renderedId = element.dataset.canvasBlockId;
+    const title = element.dataset.canvasBlockTitle;
+    const storedId = controller.canvasDocument.content
+      .filter((item) => item.type === "SlideBlock")
+      .flatMap((frame) =>
+        Array.isArray(frame.props.content) ? frame.props.content : [],
+      )
+      .find((block) => {
+        if (block.props.id === renderedId) {
+          return true;
+        }
+
+        if (!title) {
+          return false;
+        }
+
+        return (
+          typeof (block.props as { title?: unknown }).title === "string" &&
+          (block.props as { title?: string }).title === title
+        );
+      })?.props.id;
+    const puck = getPuck();
+    const item = puck.getItemById(storedId ?? renderedId ?? "");
+    const selector = item ? puck.getSelectorForId(item.props.id) : undefined;
+    if (!item || !selector) return;
+
+    puck.dispatch({
+      type: "replace",
+      destinationZone: selector.zone,
+      destinationIndex: selector.index,
+      data: {
+        ...item,
+        props: { ...item.props, [field]: value },
+      },
+    });
+  };
+
+  const removeBlockCopy = (event: React.MouseEvent<HTMLElement>) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-canvas-remove-block-copy]",
+    );
+    if (button) updateBlockCopy(button, "");
+  };
+
+  return (
+    <main
+      aria-label="Canvas stage"
+      className="canvas-preview-pane min-h-0 overflow-hidden bg-background"
+      style={getCanvasAppThemeVars(controller.isLightTheme)}
+      onClickCapture={removeBlockCopy}
+      onBlurCapture={(event) => {
+        const editable = (event.target as HTMLElement).closest<HTMLElement>(
+          "[data-canvas-edit-block-copy]",
+        );
+        if (editable) updateBlockCopy(editable, editable.innerText.trim());
+      }}
+    >
+      <ScrollArea className="h-full min-h-screen" scrollFade scrollbarGutter>
+        <div
+          className="box-border min-h-full py-4"
+          onClick={controller.actions.handleFrameChromeAction}
+          onDoubleClickCapture={() => controller.actions.setAiPanelOpen(true)}
+        >
+          <Puck.Preview />
+        </div>
+      </ScrollArea>
+    </main>
+  );
+}
+
 export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
   const controller = useCanvasEditorController(model);
+  const { currentTour, currentStep, setCurrentStep } = useNextStep();
+
+  useEffect(() => {
+    // Opening a canvas is what advances the onboarding tour from "pick a
+    // template" to "drag a block onto it" — a real action, not a tour-card
+    // click. See onboarding-tour.ts.
+    if (
+      currentTour === ONBOARDING_TOUR_NAME &&
+      currentStep === OnboardingStep.FillCanvasDialog
+    ) {
+      setCurrentStep(OnboardingStep.DragBlock, 400);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTour]);
 
   return (
     <section
@@ -62,6 +160,13 @@ export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
         height="100%"
         iframe={{ enabled: false }}
         overrides={canvasPuckOverrides}
+        viewports={[
+          {
+            width: 1920,
+            height: 1080,
+            label: "16:9",
+          },
+        ]}
         onChange={controller.actions.handlePuckChange}
         onPublish={(nextDocument) => {
           void controller.actions.persistCanvas(nextDocument);
@@ -107,6 +212,7 @@ export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
               actionLog={controller.actionLog}
               actions={{
                 applyAction: controller.actions.applyAction,
+                goToFrame: controller.actions.goToFrame,
                 getSketchScene: controller.actions.getSketchScene,
                 runJsonCommand: controller.actions.runJsonCommand,
                 setCommandDraft: controller.actions.setCommandDraft,
@@ -126,21 +232,7 @@ export function CanvasEditorScreen({ model }: CanvasEditorScreenProps) {
               show={controller.showToolPanel}
             />
 
-            <main
-              aria-label="Canvas stage"
-              className="canvas-preview-pane min-h-0 overflow-hidden bg-background"
-              style={getCanvasAppThemeVars(controller.isLightTheme)}
-            >
-              <ScrollArea className="h-full min-h-screen" scrollFade scrollbarGutter>
-                <div
-                  className="box-border min-h-full py-4"
-                  onClick={controller.actions.handleFrameChromeAction}
-                  onDoubleClickCapture={() => controller.actions.setAiPanelOpen(true)}
-                >
-                  <Puck.Preview />
-                </div>
-              </ScrollArea>
-            </main>
+            <CanvasEditorStage controller={controller} />
 
             <CanvasEditorInspectorPanel
               actions={{

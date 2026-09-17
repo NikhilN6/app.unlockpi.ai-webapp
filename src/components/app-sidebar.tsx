@@ -154,7 +154,9 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
               isActive={isCanvasActive}
               className="h-auto min-h-10 items-start gap-2.5 py-2 group-data-[collapsible=icon]:items-center"
             >
-              <quickAction.icon className={cn("mt-0.5 size-4 shrink-0", isCanvasActive && "")} />
+              <quickAction.icon
+                className={cn("mt-0.5 size-4 shrink-0", isCanvasActive && "")}
+              />
               <div className="grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden">
                 <span className="truncate">{quickAction.title}</span>
               </div>
@@ -204,8 +206,8 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
         it's a destination page like Projects or Visuals, not an account
         action, so it belongs with the nav rather than in the avatar menu.
       */}
-      <SidebarFooter className="mt-auto border-t border-border/50 px-2 py-2">
-        <SidebarMenu>
+      <SidebarFooter className="mt-auto border-t border-border/50 px-2 pt-2 pb-0! ">
+        <SidebarMenu className="gap-0!">
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href={settingsItem.url} />}
@@ -218,6 +220,24 @@ export function AppSidebar(props: ComponentProps<typeof Sidebar>) {
                 <span className="truncate">{settingsItem.title}</span>
               </div>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="ml-2">
+            {/* <SidebarMenuButton
+              render={<Link href={settingsItem.url} />}
+              tooltip={settingsItem.title}
+              isActive={pathname.startsWith(settingsItem.url)}
+              className="h-auto min-h-10 items-start gap-2.5 py-2 group-data-[collapsible=icon]:items-center"
+            >
+              <settingsItem.icon className="mt-0.5 size-4 shrink-0" />
+              <div className="grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden">
+                <span className="truncate">
+                  © 2026 UnlockPi.com, Inc. v.2.1.0
+                </span>
+              </div>
+            </SidebarMenuButton> */}
+            <span className="truncate text-[8px] mx-auto text-muted-foreground">
+              © 2026 UnlockPi.com, Inc. v.2.1.0
+            </span>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

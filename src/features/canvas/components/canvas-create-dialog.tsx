@@ -125,6 +125,7 @@ export function CanvasCreateDialog({
                 Pick the starter layout that should open first in the editor.
               </FieldDescription> */}
               <RadioGroup
+                id="onboarding-canvas-templates"
                 value={selectedTemplateKey}
                 onValueChange={(value) =>
                   onTemplateSelect(value as CanvasTemplateKey)
