@@ -194,7 +194,7 @@ export function CanvasEditorHeader({
                 {classModes.map(({ mode, icon: Icon, title, tagline }) => (
                   <PopoverClose
                     key={mode}
-                    render={<button type="button" />}
+                    render={<div role="button" tabIndex={0} />}
                     onClick={() => startClass(mode)}
                     className={cn(
                       "flex flex-col  overflow-hidden w-full items-start gap-3   py-3 text-left outline-none transition-[background-color,border-color]  focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]",

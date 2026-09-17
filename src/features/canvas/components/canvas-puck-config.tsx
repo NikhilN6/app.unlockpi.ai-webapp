@@ -107,12 +107,125 @@ function blockShell(className: string | undefined, children: ReactNode) {
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-card p-5 shadow-xs",
+        "canvas-frame-block flex flex-col justify-start rounded-lg border border-border bg-card p-5 shadow-xs",
         className,
       )}
     >
       {children}
     </section>
+  );
+}
+
+function extractBlockCopyText(value: unknown): string {
+  if (value == null) {
+    return "";
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value).trim();
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => extractBlockCopyText(item))
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const preferredKeys = ["value", "text", "caption", "label", "title"];
+
+    for (const key of preferredKeys) {
+      const extracted = extractBlockCopyText(record[key]);
+      if (extracted) {
+        return extracted;
+      }
+    }
+
+    for (const key of ["children", "content", "props", "data"]) {
+      const extracted = extractBlockCopyText(record[key]);
+      if (extracted) {
+        return extracted;
+      }
+    }
+  }
+
+  return "";
+}
+
+function OptionalBlockCopy({
+  id,
+  title,
+  caption,
+}: {
+  id: string;
+  title?: string;
+  caption?: string;
+}) {
+  const normalizedTitle = extractBlockCopyText(title);
+  const normalizedCaption = extractBlockCopyText(caption);
+  const remove = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  if (!normalizedTitle && !normalizedCaption) return null;
+
+  return (
+    <header className="canvas-optional-block-copy flex w-full flex-col gap-1 text-left">
+      {normalizedTitle ? (
+        <div className="group flex items-center gap-1.5">
+          <h3
+            className="canvas-block-copy-editor text-base font-semibold leading-5 tracking-tight text-foreground"
+            contentEditable
+            suppressContentEditableWarning
+            data-canvas-edit-block-copy="title"
+            data-canvas-block-id={id}
+            data-canvas-block-title={normalizedTitle}
+          >
+            {normalizedTitle}
+          </h3>
+          <button
+            type="button"
+            aria-label="Remove block title"
+            className="canvas-copy-delete"
+            data-canvas-remove-block-copy="title"
+            data-canvas-block-id={id}
+            data-canvas-block-title={normalizedTitle}
+            onClick={remove}
+          >
+            <Trash2Icon className="size-3" />
+          </button>
+        </div>
+      ) : null}
+      {normalizedCaption ? (
+        <div className="group flex items-center gap-1.5">
+          <p
+            className="canvas-block-copy-editor text-sm leading-5 text-muted-foreground"
+            contentEditable
+            suppressContentEditableWarning
+            data-canvas-edit-block-copy="caption"
+            data-canvas-block-id={id}
+            data-canvas-block-title={normalizedTitle}
+          >
+            {normalizedCaption}
+          </p>
+          <button
+            type="button"
+            aria-label="Remove block description"
+            className="canvas-copy-delete"
+            data-canvas-remove-block-copy="caption"
+            data-canvas-block-id={id}
+            data-canvas-block-title={normalizedTitle}
+            onClick={remove}
+          >
+            <Trash2Icon className="size-3" />
+          </button>
+        </div>
+      ) : null}
+    </header>
   );
 }
 
@@ -175,10 +288,11 @@ function SlideBlock({
         <Drawer position="right">
           <DrawerTrigger
             render={
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 aria-label={`${label} actions`}
-                className="grid size-8 place-items-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
+                className="rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition hover:bg-muted hover:text-foreground"
               />
             }
           >
@@ -235,7 +349,7 @@ function SlideBlock({
         title={`${label}: ${title}`}
         className="relative flex min-h-[560px] min-w-0 w-full flex-col gap-5 rounded-lg border border-border bg-background p-4 text-foreground shadow-[0_22px_70px_var(--canvas-shadow-color)] sm:p-5 lg:p-7"
       >
-        <ScrollArea className="min-h-0 flex-1 rounded-md border">
+        <ScrollArea fill className="min-h-0 flex-1 rounded-md border">
           <Content
             allow={[
               "HeadingTextBlock",
@@ -252,10 +366,10 @@ function SlideBlock({
               "CheckpointBlock",
               "SketchBlock",
             ]}
-            className="grid min-h-[470px] min-w-0 flex-1 content-start gap-4 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 pb-10 sm:p-4 sm:pb-11"
+            className="grid h-full min-h-[470px] min-w-0 content-between gap-4 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3 pb-10 sm:p-4 sm:pb-11"
           />
         </ScrollArea>
-        <div className="pointer-events-none absolute bottom-right-8 z-10 flex items-center gap-1.5 rounded-md bg-background/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70 backdrop-blur-sm lg:bottom-9 lg:right-9">
+        <div className="canvas-frame-watermark pointer-events-none absolute bottom-right-8 z-10 flex items-center gap-1.5 rounded-md bg-background/75 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70 backdrop-blur-sm lg:bottom-9 lg:right-9">
           <span>Made with</span>
           <Logo
             isLink={false}
@@ -304,6 +418,7 @@ function BodyTextBlock({ text }: BodyTextBlockProps) {
 }
 
 function ArrayBlock({
+  id,
   title,
   values,
   highlightedIndex,
@@ -320,12 +435,9 @@ function ArrayBlock({
   );
 
   return blockShell(
-    "overflow-x-auto",
-    <div className="grid gap-4">
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{caption}</p>
-      </div>
+    cn("overflow-x-auto", (!title || !caption) && "canvas-frame-block--compact"),
+    <div className="grid w-full gap-4">
+      <OptionalBlockCopy id={id} title={title} caption={caption} />
       <ArrayStrip
         activeIndex={traversal.highlightedIndex}
         visitedIndices={traversal.visitedIndices}
@@ -347,6 +459,7 @@ function ArrayBlock({
 }
 
 function StackBlock({
+  id,
   title,
   values,
   highlightedIndex,
@@ -364,12 +477,9 @@ function StackBlock({
   );
 
   return blockShell(
-    undefined,
-    <div className="grid gap-4">
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{caption}</p>
-      </div>
+    !title || !caption ? "canvas-frame-block--compact" : undefined,
+    <div className="grid w-full gap-4">
+      <OptionalBlockCopy id={id} title={title} caption={caption} />
       <StackStrip
         activeIndex={traversal.highlightedIndex}
         visitedIndices={traversal.visitedIndices}
@@ -378,6 +488,7 @@ function StackBlock({
         name="S"
         isFixed={isFixed}
         stackSize={stackSize}
+        className={cn("justify-start", (!title || !caption) && "pt-6")}
       />
       <TraversalTrigger
         length={stackValues.length}
@@ -391,6 +502,7 @@ function StackBlock({
 }
 
 function QueueBlock({
+  id,
   title,
   values,
   highlightedIndex,
@@ -406,18 +518,16 @@ function QueueBlock({
   );
 
   return blockShell(
-    "overflow-x-auto",
-    <div className="grid gap-4">
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{caption}</p>
-      </div>
+    cn("overflow-x-auto", (!title || !caption) && "canvas-frame-block--compact"),
+    <div className="grid w-full gap-4">
+      <OptionalBlockCopy id={id} title={title} caption={caption} />
       <QueueStrip
         activeIndex={traversal.highlightedIndex}
         visitedIndices={traversal.visitedIndices}
         traversalTarget={traversalTarget}
         data={queueValues}
         name="Q"
+        className="justify-start"
       />
       <TraversalTrigger
         length={queueValues.length}
@@ -431,6 +541,7 @@ function QueueBlock({
 }
 
 function LinkedListBlock({
+  id,
   title,
   nodes,
   highlightedIndex,
@@ -445,17 +556,15 @@ function LinkedListBlock({
   );
 
   return blockShell(
-    "overflow-x-auto",
-    <div className="grid gap-4">
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{caption}</p>
-      </div>
+    cn("overflow-x-auto", (!title || !caption) && "canvas-frame-block--compact"),
+    <div className="grid w-full gap-4">
+      <OptionalBlockCopy id={id} title={title} caption={caption} />
       <LinkedListStrip
         nodes={nodes}
         activeIndex={traversal.highlightedIndex}
         visitedIndices={traversal.visitedIndices}
         traversalTarget={traversalTarget}
+        className="w-full"
       />
       <TraversalTrigger
         length={nodes.length}
@@ -471,7 +580,7 @@ function LinkedListBlock({
 function MindMapBlock({ title, center, branches }: MindMapBlockProps) {
   return blockShell(
     undefined,
-    <div className="grid gap-4">
+    <div className="grid w-full gap-4">
       <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
       <MindMapBoard center={center} branches={branches} />
     </div>,

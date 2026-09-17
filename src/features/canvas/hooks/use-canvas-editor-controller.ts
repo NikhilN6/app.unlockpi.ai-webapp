@@ -13,7 +13,9 @@ import { useDebouncedCallback } from "use-debounce";
 
 import { playCanvasActionSound } from "@/features/canvas/lib/canvas-action-sound";
 import {
+  addsContentPastFrameCapacity,
   applyCanvasAction,
+  FRAME_CONTENT_LIMIT_MESSAGE,
   normalizeCanvasFrames,
   summarizeCanvas,
 } from "@/features/canvas/lib/canvas-commands";
@@ -58,6 +60,55 @@ import { toastManager } from "@/components/ui/toast";
 
 type PresentationModeValue = "voice" | "companion" | "manual" | null;
 
+type BlockCopyField = "title" | "caption";
+
+function withoutBlockCopy(
+  document: CanvasDocument,
+  blockId: string | undefined,
+  field: BlockCopyField,
+  title: string | undefined,
+): CanvasDocument {
+  return {
+    ...document,
+    content: document.content.map((frame) => {
+      if (frame.type !== "SlideBlock" || !Array.isArray(frame.props.content)) {
+        return frame;
+      }
+
+      return {
+        ...frame,
+        props: {
+          ...frame.props,
+          content: frame.props.content.map((block) =>
+            // Render's id is normally the stored id. The title fallback also
+            // covers legacy Puck blocks whose render id was not persisted.
+            (block.props.id === blockId ||
+              (typeof (block.props as { title?: unknown }).title === "string" &&
+                (block.props as { title?: string }).title === title))
+              ? {
+                  ...block,
+                  props: { ...block.props, [field]: "" },
+                } as typeof block
+              : block,
+          ),
+        },
+      };
+    }),
+  };
+}
+
+function scrollEditorToFrame(frameId: string) {
+  // The thumbnail <Render>s intentionally render the same frame markup as the
+  // editor, including its id. Restrict the lookup to the stage so we never
+  // scroll a thumbnail in the left panel instead of the actual editor frame.
+  const stage = window.document.querySelector(".canvas-preview-pane");
+  const frame = Array.from(
+    stage?.querySelectorAll<HTMLElement>("[id^='canvas-slide-']") ?? [],
+  ).find((element) => element.id === `canvas-slide-${frameId}`);
+
+  frame?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
 export function useCanvasEditorController(
   model: CanvasEditorPageModel,
 ): CanvasEditorController {
@@ -98,23 +149,35 @@ export function useCanvasEditorController(
   // without a real route change, which would tear down and reconnect the
   // live WebRTC session to OpenAI's Realtime API every time.
   const [presentationMode, setPresentationModeState] =
-    useState<PresentationModeValue>(() => {
-      if (typeof window === "undefined") return null;
-      const fromUrl = new URLSearchParams(window.location.search).get(
-        "present",
-      );
-      return fromUrl === "voice" ||
-        fromUrl === "companion" ||
-        fromUrl === "manual"
-        ? fromUrl
-        : null;
-    });
-  // Wraps the raw setState so every mode change also updates the URL. Uses
-  // `history.replaceState` directly rather than Next's router: the router's
-  // push/replace re-requests the RSC payload for the route even when only
-  // the search params change, which would needlessly re-run this page's
-  // Supabase auth + canvas fetch on every "start/stop presenting" click.
-  // `history.replaceState` only touches what's in the address bar.
+    useState<PresentationModeValue>(null);
+  const hasSyncedPresentationUrl = useRef(false);
+
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("present");
+    if (fromUrl === "voice" || fromUrl === "companion" || fromUrl === "manual") {
+      setPresentationModeState(fromUrl);
+    }
+  }, []);
+
+  useEffect(() => {
+    // The first effect only restores an existing URL state. Every later mode
+    // change is a user action and can safely be mirrored back to the URL.
+    if (!hasSyncedPresentationUrl.current) {
+      hasSyncedPresentationUrl.current = true;
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    if (presentationMode) {
+      url.searchParams.set("present", presentationMode);
+    } else {
+      url.searchParams.delete("present");
+    }
+    window.history.replaceState(null, "", url);
+  }, [presentationMode]);
+  // URL synchronisation happens in the effect above, not inside this state
+  // updater. Calling history.replaceState while React is rendering can make
+  // Next's Router update during CanvasEditorScreen's render.
   const setPresentationMode = useCallback(
     (
       next:
@@ -124,15 +187,6 @@ export function useCanvasEditorController(
       setPresentationModeState((previous) => {
         const resolved =
           typeof next === "function" ? next(previous) : next;
-        if (typeof window !== "undefined") {
-          const url = new URL(window.location.href);
-          if (resolved) {
-            url.searchParams.set("present", resolved);
-          } else {
-            url.searchParams.delete("present");
-          }
-          window.history.replaceState(null, "", url);
-        }
         return resolved;
       });
     },
@@ -153,11 +207,10 @@ export function useCanvasEditorController(
   const [shareError, setShareError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(min-width: 1024px)").matches
-      : false,
-  );
+  // Keep the server and client's first render identical. Reading matchMedia
+  // during state initialisation made the server render collapsed panels while
+  // a desktop browser rendered them open, producing a hydration mismatch.
+  const [isDesktop, setIsDesktop] = useState(false);
   const [actionLog, setActionLog] = useState([
     {
       id: "initial",
@@ -186,13 +239,46 @@ export function useCanvasEditorController(
   }, [canvasDocument]);
 
   useEffect(() => {
+    const removeBlockCopy = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        field?: BlockCopyField;
+        id?: string;
+        title?: string;
+      }>).detail;
+      if (detail?.field !== "title" && detail?.field !== "caption") {
+        return;
+      }
+
+      const nextDocument = withoutBlockCopy(
+        canvasDocumentRef.current,
+        detail.id,
+        detail.field,
+        detail.title,
+      );
+      canvasDocumentRef.current = nextDocument;
+      setCanvasDocument(nextDocument);
+      setPuckRevision((revision) => revision + 1);
+      setSaveStatus("Unsaved changes");
+    };
+
+    window.addEventListener("canvas:remove-block-copy", removeBlockCopy);
+    return () =>
+      window.removeEventListener("canvas:remove-block-copy", removeBlockCopy);
+  }, []);
+
+  useEffect(() => {
     if (!activeSlideId) {
       return;
     }
 
-    window.document
-      .getElementById(`canvas-slide-${activeSlideId}`)
-      ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    // Puck can briefly replace the preview while it applies an edit. Waiting
+    // one paint ensures the target belongs to the current editor tree before
+    // asking the stage's ScrollArea to reveal it.
+    const frame = window.requestAnimationFrame(() => {
+      scrollEditorToFrame(activeSlideId);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [activeSlideId, puckRevision]);
 
   useEffect(() => {
@@ -329,8 +415,27 @@ export function useCanvasEditorController(
   };
 
   const handlePuckChange = (nextDocument: CanvasDocument) => {
-    setCanvasDocument(normalizeCanvasFrames(nextDocument));
+    const normalizedDocument = normalizeCanvasFrames(nextDocument);
+
+    if (addsContentPastFrameCapacity(canvasDocumentRef.current, normalizedDocument)) {
+      toastManager.add({
+        title: "Frame has no room",
+        description: FRAME_CONTENT_LIMIT_MESSAGE,
+        type: "error",
+      });
+      // Puck owns the in-progress drag state. Re-mount from the last accepted
+      // document so a rejected drop cannot remain visible in the editor.
+      setPuckRevision((revision) => revision + 1);
+      return;
+    }
+
+    setCanvasDocument(normalizedDocument);
+    canvasDocumentRef.current = normalizedDocument;
     setSaveStatus("Unsaved changes");
+    // Inline block controls (title, description, and their remove buttons)
+    // are edited through Puck. Persist that live document immediately so the
+    // compacted layout survives a refresh just like an inspector edit does.
+    void persistCanvas(normalizedDocument);
   };
 
   const updateCanvasAppearance = (
@@ -384,6 +489,21 @@ export function useCanvasEditorController(
     setCommandError(null);
     setSaveStatus("Unsaved changes");
     appendLog(result.message);
+  };
+
+  const goToFrame = (frameId: string) => {
+    if (!frames.some((frame) => frame.id === frameId)) {
+      return;
+    }
+
+    setActiveSlideId(frameId);
+    // Clicking the already-active thumbnail should still bring its frame into
+    // view. The effect above only runs when React observes a state change.
+    if (activeSlideId === frameId) {
+      window.requestAnimationFrame(() => {
+        scrollEditorToFrame(frameId);
+      });
+    }
   };
 
   const runJsonCommand = () => {
@@ -537,6 +657,7 @@ export function useCanvasEditorController(
     toolPanelOpen,
     actions: {
       applyAction,
+      goToFrame,
       copyPublicLink,
       downloadAsPdf,
       commitCanvasTitle,
